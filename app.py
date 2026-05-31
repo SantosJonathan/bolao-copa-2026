@@ -1,8 +1,3 @@
-"""
-Bolão Copa do Mundo 2026 — Grupo C
-Streamlit app — versão responsiva
-"""
-
 import streamlit as st
 
 st.set_page_config(
@@ -11,6 +6,23 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed",
 )
+
+# CRÍTICO para mobile: injeta viewport meta tag que o Streamlit não coloca
+st.markdown("""
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+  /* Remove padding lateral padrão do Streamlit que causa scroll horizontal */
+  .appview-container .main .block-container {
+      padding-left: 0.75rem !important;
+      padding-right: 0.75rem !important;
+  }
+  /* Garante que nenhum elemento ultrapasse a tela */
+  * { max-width: 100%; box-sizing: border-box; }
+  img, video, iframe { max-width: 100% !important; }
+  /* Esconde menu e rodapé do Streamlit */
+  #MainMenu, footer, header { visibility: hidden; }
+</style>
+""", unsafe_allow_html=True)
 
 with open("utils/styles.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
@@ -22,19 +34,6 @@ import pages.admin      as admin
 
 init_db()
 
-# ── Header ─────────────────────────────────────────────────
-st.markdown("""
- 
-    <div class="header-title">
-        <span class="title-main">BOLÃO COPA 2026</span>
-        <span class="title-sub">FASE DE GRUPOS</span>
-    </div>
-
-""", unsafe_allow_html=True)
-
-
-
-# ── Tabs ────────────────────────────────────────────────────
 tab1, tab2, tab3 = st.tabs(["📝 PARTICIPAR", "🏆 RANKING", "⚙️ ADMIN"])
 
 with tab1:
