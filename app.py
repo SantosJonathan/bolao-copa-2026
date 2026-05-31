@@ -382,9 +382,9 @@ select.input-field option{{background:#2a1b6b;color:#fff}}
       </div>
     </div>
 
-    <!-- Classificação -->
-    <div class="card">
-      <h3 style="text-align:center;margin-bottom:12px;font-size:clamp(0.9rem,4vw,1.1rem);">🏆 CLASSIFICAÇÃO DO GRUPO C</h3>
+    <!-- Classificação — fundo roxo escuro para os selects ficarem visíveis -->
+    <div style="background:#1e1560;border-radius:14px;padding:clamp(10px,3vw,16px);margin-bottom:14px;border:1px solid rgba(255,255,255,0.15);">
+      <h3 style="text-align:center;margin-bottom:14px;font-size:clamp(0.9rem,4vw,1.1rem);color:#fff;font-weight:900;">🏆 CLASSIFICAÇÃO DO GRUPO C</h3>
       <div class="input-label">1º Colocado</div>
       <select id="c1" class="input-field"><option value="">-- Selecione --</option><option>BRASIL</option><option>MARROCOS</option><option>HAITI</option><option>ESCÓCIA</option></select>
       <div class="input-label">2º Colocado</div>
@@ -461,15 +461,25 @@ select.input-field option{{background:#2a1b6b;color:#fff}}
     ⚙️ Área exclusiva do organizador
   </div>
   <div class="input-label">Senha do administrador</div>
-  <input id="admin-pwd" class="input-field" type="password" placeholder="••••••••">
+  <div style="display:flex;gap:10px;margin-bottom:6px;">
+    <input id="admin-pwd" class="input-field" type="password" placeholder="••••••••" style="margin-bottom:0;flex:1" onkeydown="if(event.key==='Enter')checkAdminPwd()">
+    <button class="btn btn-yellow" style="width:auto;padding:10px 20px;flex-shrink:0" onclick="checkAdminPwd()">ENTRAR</button>
+  </div>
+  <div id="admin-pwd-msg" style="display:none;color:#ffaaaa;font-size:0.85rem;margin-bottom:10px;font-weight:700;"></div>
 
-  <div class="sec-title">PLACARES REAIS</div>
-  <div id="admin-placares"></div>
-  <button class="btn btn-green" onclick="adminSavePlacar()" style="margin-bottom:20px">💾 SALVAR PLACARES</button>
+  <!-- Conteúdo admin — oculto até senha correta -->
+  <div id="admin-content" style="display:none">
+    <div style="background:rgba(0,156,59,0.12);border:1px solid #009c3b;border-radius:10px;padding:10px 14px;margin-bottom:16px;color:#7fffb0;font-size:0.88rem;font-weight:700;">
+      ✅ Acesso liberado
+    </div>
+    <div class="sec-title">PLACARES REAIS</div>
+    <div id="admin-placares"></div>
+    <button class="btn btn-green" onclick="adminSavePlacar()" style="margin-bottom:20px">💾 SALVAR PLACARES</button>
 
-  <div class="sec-title">CLASSIFICAÇÃO FINAL</div>
-  <div id="admin-classif"></div>
-  <button class="btn btn-green" onclick="adminSaveClassif()">💾 SALVAR CLASSIFICAÇÃO</button>
+    <div class="sec-title">CLASSIFICAÇÃO FINAL</div>
+    <div id="admin-classif"></div>
+    <button class="btn btn-green" onclick="adminSaveClassif()">💾 SALVAR CLASSIFICAÇÃO</button>
+  </div>
 </div>
 
 <script>
@@ -690,7 +700,21 @@ function buildAdmin() {{
   document.getElementById('admin-classif').innerHTML = ch;
 }}
 
-function adminSavePlacar() {{
+// ── Admin password gate ───────────────────────────────────
+const ADMIN_PWD = 'brasil2026';
+function checkAdminPwd() {{
+  const pwd = document.getElementById('admin-pwd').value;
+  const msg = document.getElementById('admin-pwd-msg');
+  if (pwd === ADMIN_PWD) {{
+    document.getElementById('admin-content').style.display = 'block';
+    document.getElementById('admin-pwd-msg').style.display = 'none';
+    buildAdmin();
+  }} else {{
+    msg.textContent = '❌ Senha incorreta!';
+    msg.style.display = 'block';
+    document.getElementById('admin-content').style.display = 'none';
+  }}
+}}
   const pwd = document.getElementById('admin-pwd').value;
   const p = new URLSearchParams({{action:'admin_save_placar',pwd}});
   ['jogo1','jogo2','jogo3'].forEach((k,i) => {{
