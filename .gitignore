@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+bolao.db
+.streamlit/secrets.toml
+*.egg-info/
+dist/
+build/
+.DS_Store

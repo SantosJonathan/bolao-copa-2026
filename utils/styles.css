@@ -1,0 +1,943 @@
+/* ── Google Fonts ─────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap');
+
+/* ── Root Variables ───────────────────────────────────── */
+:root {
+    --navy: #1a1464;
+    --purple: #2d1b69;
+    --green: #009c3b;
+    --green2: #00b845;
+    --yellow: #ffdf00;
+    --gold: #f5a623;
+    --white: #ffffff;
+    --red: #e53935;
+    --card-bg: rgba(255, 255, 255, 0.06);
+    --card-bd: rgba(255, 255, 255, 0.12);
+
+    /* spacing scale */
+    --sp-xs: clamp(4px, 1vw, 6px);
+    --sp-sm: clamp(8px, 2vw, 12px);
+    --sp-md: clamp(12px, 3vw, 18px);
+    --sp-lg: clamp(16px, 4vw, 24px);
+
+    /* font scale */
+    --fs-xs: clamp(0.65rem, 2.2vw, 0.75rem);
+    --fs-sm: clamp(0.78rem, 2.6vw, 0.88rem);
+    --fs-md: clamp(0.9rem, 3vw, 1rem);
+    --fs-lg: clamp(1rem, 3.5vw, 1.2rem);
+    --fs-xl: clamp(1.2rem, 4.5vw, 1.6rem);
+    --fs-2xl: clamp(1.5rem, 6vw, 2.2rem);
+    --fs-3xl: clamp(2rem, 8vw, 3rem);
+}
+
+/* ── Reset / Global ───────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+.stApp {
+    background: linear-gradient(160deg, #0d0a38 0%, #1a1464 45%, #2d1b69 100%) !important;
+    font-family: 'Barlow', sans-serif;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* Container responsivo */
+.main .block-container {
+    padding: var(--sp-sm) var(--sp-sm) 3rem !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+}
+
+/* Remove o padding padrão que quebra mobile */
+section[data-testid="stSidebar"] {
+    display: none;
+}
+
+#MainMenu,
+footer,
+header {
+    visibility: hidden;
+}
+
+/* ── Header Banner ─────────────────────────────────────── */
+.header-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #0d0a38 0%, #1a1464 60%, #2d1b69 100%);
+    border: 2px solid var(--yellow);
+    border-radius: 14px;
+    padding: var(--sp-sm) var(--sp-md);
+    margin-bottom: var(--sp-md);
+    position: relative;
+    overflow: hidden;
+    gap: var(--sp-sm);
+}
+
+.header-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(45deg,
+            transparent,
+            transparent 20px,
+            rgba(255, 223, 0, 0.03) 20px,
+            rgba(255, 223, 0, 0.03) 21px);
+    pointer-events: none;
+}
+
+.header-flag {
+    font-size: clamp(1.8rem, 6vw, 2.4rem);
+    flex-shrink: 0;
+}
+
+.header-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    flex: 1;
+}
+
+.title-main {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.3rem, 5.5vw, 2rem);
+    color: var(--yellow);
+    letter-spacing: clamp(1px, 0.5vw, 3px);
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(255, 223, 0, 0.3);
+}
+
+.title-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(0.6rem, 2.2vw, 0.82rem);
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: clamp(1px, 0.8vw, 4px);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.header-badge {
+    background: var(--green);
+    color: var(--white);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(0.85rem, 3vw, 1.1rem);
+    letter-spacing: 2px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 2px solid var(--green2);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* ── Brasil Banner ────────────────────────────────────── */
+.brasil-banner {
+    display: flex;
+    align-items: stretch;
+    background: var(--white);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: var(--sp-md);
+    min-height: clamp(70px, 18vw, 100px);
+    border: 3px solid rgba(255, 223, 0, 0.3);
+}
+
+.brasil-flag-side {
+    background: var(--green);
+    width: clamp(80px, 28%, 160px);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-sm);
+}
+
+.brasil-diamond {
+    background: var(--yellow);
+    width: clamp(54px, 14vw, 90px);
+    height: clamp(32px, 8vw, 50px);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.brasil-circle {
+    background: #2a1b6b;
+    width: clamp(22px, 5.5vw, 36px);
+    height: clamp(22px, 5.5vw, 36px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(5px, 1.2vw, 7px);
+    color: #fff;
+    font-weight: 900;
+    text-align: center;
+    line-height: 1.1;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.2px;
+}
+
+.brasil-name-side {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.8rem, 8vw, 3.2rem);
+    color: #2a1b6b;
+    letter-spacing: clamp(2px, 1vw, 6px);
+    padding: var(--sp-sm);
+}
+
+/* ── Tabs ──────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 12px !important;
+    padding: 4px !important;
+    gap: 3px !important;
+    border: 1px solid var(--card-bd) !important;
+    flex-wrap: nowrap !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    color: rgba(255, 255, 255, 0.55) !important;
+    font-family: 'Barlow Condensed', sans-serif !important;
+    font-size: clamp(0.75rem, 2.8vw, 0.9rem) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    padding: clamp(6px, 1.5vw, 10px) clamp(8px, 2.5vw, 20px) !important;
+    border-radius: 9px !important;
+    background: transparent !important;
+    border: none !important;
+    flex: 1 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    transition: all 0.2s !important;
+}
+
+.stTabs [aria-selected="true"] {
+    color: var(--navy) !important;
+    background: var(--yellow) !important;
+    font-weight: 800 !important;
+}
+
+/* ── Section titles ────────────────────────────────────── */
+.section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.05rem, 3.5vw, 1.3rem);
+    color: var(--white);
+    letter-spacing: 2px;
+    border-left: 4px solid var(--yellow);
+    padding-left: 10px;
+    margin: var(--sp-lg) 0 var(--sp-sm) 0;
+}
+
+/* ── Rules box ─────────────────────────────────────────── */
+.rules-box {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: var(--sp-md);
+    margin: var(--sp-md) 0;
+}
+
+.rule-item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    padding: 6px 0;
+    font-family: 'Barlow', sans-serif;
+    font-size: var(--fs-sm);
+    color: rgba(255, 255, 255, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rule-item:last-child {
+    border-bottom: none;
+}
+
+.rule-pts {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1rem, 3.5vw, 1.2rem);
+    color: var(--yellow);
+    min-width: 52px;
+}
+
+/* ── Jogo Card ─────────────────────────────────────────── */
+.jogo-wrapper {
+    background: var(--card-bg);
+    border: 1px solid var(--card-bd);
+    border-radius: 14px;
+    padding: var(--sp-md);
+    margin-bottom: var(--sp-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.jogo-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--yellow), var(--green));
+}
+
+.jogo-sub-header {
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: var(--sp-sm);
+}
+
+.jogo-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-xs);
+}
+
+.jogo-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.jogo-team-flag {
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    line-height: 1;
+}
+
+.jogo-team-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(0.85rem, 3vw, 1.1rem);
+    color: var(--yellow);
+    letter-spacing: 1px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.jogo-team-name.away {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.jogo-x {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    color: rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
+    padding: 0 var(--sp-xs);
+}
+
+.pontos-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: rgba(245, 166, 35, 0.12);
+    border: 1px solid rgba(245, 166, 35, 0.4);
+    color: var(--gold);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-top: var(--sp-sm);
+    text-transform: uppercase;
+}
+
+/* ── Number inputs ─────────────────────────────────────── */
+.stNumberInput {
+    min-width: 0 !important;
+}
+
+.stNumberInput input {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 10px !important;
+    color: var(--white) !important;
+    font-family: 'Bebas Neue', sans-serif !important;
+    font-size: clamp(1.4rem, 5vw, 2rem) !important;
+    text-align: center !important;
+    min-height: 52px !important;
+    padding: 4px !important;
+}
+
+.stNumberInput input:focus {
+    border-color: var(--yellow) !important;
+    box-shadow: 0 0 0 2px rgba(255, 223, 0, 0.2) !important;
+}
+
+/* hide the +/- stepper buttons on mobile to save space */
+.stNumberInput [data-testid="stNumberInputStepDown"],
+.stNumberInput [data-testid="stNumberInputStepUp"] {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: var(--white) !important;
+    border-radius: 8px !important;
+}
+
+/* ── Text input ────────────────────────────────────────── */
+input[type="text"],
+.stTextInput input {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid var(--card-bd) !important;
+    border-radius: 10px !important;
+    color: var(--white) !important;
+    font-family: 'Barlow', sans-serif !important;
+    font-size: var(--fs-md) !important;
+    padding: 10px 14px !important;
+}
+
+input[type="text"]:focus,
+.stTextInput input:focus {
+    border-color: var(--yellow) !important;
+    box-shadow: 0 0 0 2px rgba(255, 223, 0, 0.15) !important;
+}
+
+/* Input labels */
+.stTextInput label,
+.stNumberInput label,
+.stSelectbox label,
+.stDateInput label {
+    color: rgba(255, 255, 255, 1) !important;
+    font-family: 'Barlow Condensed', sans-serif !important;
+    font-size: var(--fs-sm) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+}
+
+
+
+/* ── Selectbox ─────────────────────────────────────────── */
+.stSelectbox>div>div {
+    background: rgba(0, 6, 7, 1) !important;
+    border: 1px solid var(--card-bd) !important;
+    border-radius: 10px !important;
+    color: var(#2a1b6b) !important;
+    font-family: 'Barlow', sans-serif !important;
+
+}
+
+
+/* ── Classificação ─────────────────────────────────────── */
+.classif-section {
+    background: rgba(0, 156, 59, 0.1);
+    border: 1px solid rgba(0, 156, 59, 0.35);
+    border-radius: 14px;
+    padding: var(--sp-md);
+    margin-bottom: var(--sp-sm);
+}
+
+.classif-hint {
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Barlow', sans-serif;
+    font-size: var(--fs-sm);
+    margin-bottom: var(--sp-sm);
+}
+
+.pos-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    margin-bottom: var(--sp-xs);
+}
+
+.pos-medal {
+    font-size: clamp(1rem, 3.5vw, 1.3rem);
+    flex-shrink: 0;
+    width: 28px;
+    text-align: center;
+}
+
+/* ── Descrição + Pontuação row ─────────────────────────── */
+.desc-pts-row {
+    display: flex;
+    gap: var(--sp-sm);
+    margin: var(--sp-md) 0;
+    flex-wrap: wrap;
+}
+
+.desc-card,
+.pts-card {
+    background: var(--white);
+    border-radius: 14px;
+    padding: var(--sp-md);
+    flex: 1;
+    min-width: min(100%, 260px);
+}
+
+.desc-card * {
+    color: #2a1b6b;
+}
+
+.pts-card * {
+    color: #2a1b6b;
+}
+
+.desc-card h4,
+.pts-card h4 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: var(--fs-lg);
+    margin: 0 0 var(--sp-sm) 0;
+    color: #2a1b6b !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #ffdf00;
+    padding-bottom: 6px;
+}
+
+.desc-card p {
+    font-family: 'Barlow', sans-serif;
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+    margin: 0;
+    color: #2a1b6b !important;
+}
+
+.pts-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(42, 27, 107, 0.1);
+    font-family: 'Barlow', sans-serif;
+    font-size: var(--fs-sm);
+    color: #2a1b6b !important;
+}
+
+.pts-item:last-child {
+    border-bottom: none;
+}
+
+.pts-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.1rem, 3.5vw, 1.4rem);
+    color: var(--red) !important;
+    min-width: 55px;
+    line-height: 1.1;
+}
+
+/* ── Botões ────────────────────────────────────────────── */
+.stButton>button {
+    background: linear-gradient(90deg, var(--green), var(--green2)) !important;
+    color: var(--white) !important;
+    font-family: 'Bebas Neue', sans-serif !important;
+    font-size: clamp(1rem, 3.5vw, 1.2rem) !important;
+    letter-spacing: 2px !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: clamp(10px, 2.5vw, 14px) 24px !important;
+    width: 100% !important;
+    transition: all 0.2s !important;
+    box-shadow: 0 4px 15px rgba(0, 156, 59, 0.4) !important;
+    touch-action: manipulation !important;
+    min-height: 48px !important;
+    /* acessibilidade mobile */
+}
+
+.stButton>button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 156, 59, 0.6) !important;
+}
+
+.stButton>button:active {
+    transform: translateY(0) !important;
+}
+
+/* ── Footer strip ──────────────────────────────────────── */
+.footer-strip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--sp-sm);
+    margin-top: var(--sp-lg);
+    padding: var(--sp-md);
+    background: var(--yellow);
+    border-radius: 14px;
+}
+
+.footer-item {
+    text-align: center;
+    padding: 0 var(--sp-xs);
+}
+
+.footer-pts {
+    display: block;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.2rem, 4.5vw, 1.5rem);
+    color: var(--navy);
+    line-height: 1.1;
+}
+
+.footer-desc {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(0.6rem, 1.8vw, 0.7rem);
+    color: var(--purple);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── Faixa dinheiro ────────────────────────────────────── */
+.money-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-sm);
+    background: var(--white);
+    border-radius: 14px;
+    padding: var(--sp-md);
+    margin-top: var(--sp-sm);
+}
+
+.money-box {
+    background: var(--green);
+    border-radius: 10px;
+    padding: var(--sp-sm) var(--sp-md);
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.money-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--fs-xs);
+    color: #fff;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+.money-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.6rem, 5vw, 2rem);
+    color: var(--yellow);
+    line-height: 1;
+    display: block;
+}
+
+.money-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--fs-xs);
+    color: #fff;
+    font-weight: 700;
+}
+
+.cta-area {
+    flex: 1;
+    min-width: 200px;
+}
+
+.cta-headline {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: clamp(0.82rem, 2.5vw, 1rem);
+    color: #2a1b6b;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--sp-xs);
+}
+
+.cta-pts-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    gap: 6px;
+}
+
+.cta-pts-item {
+    text-align: center;
+}
+
+.cta-pts-num {
+    display: block;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1rem, 3.5vw, 1.2rem);
+    color: var(--red);
+}
+
+.cta-pts-lbl {
+    display: block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--fs-xs);
+    color: #2a1b6b;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* ── OBS ───────────────────────────────────────────────── */
+.obs-text {
+    font-family: 'Barlow', sans-serif;
+    font-size: var(--fs-xs);
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: var(--sp-sm);
+    line-height: 1.5;
+}
+
+/* ── Ranking cards ─────────────────────────────────────── */
+.rank-card {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    background: var(--card-bg);
+    border: 1px solid var(--card-bd);
+    border-radius: 12px;
+    padding: clamp(10px, 2.5vw, 14px) clamp(12px, 3vw, 18px);
+    margin-bottom: 8px;
+    transition: border-color 0.2s;
+}
+
+.rank-card:hover {
+    border-color: var(--yellow);
+}
+
+.rank-card.rank-1 {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.08);
+}
+
+.rank-card.rank-2 {
+    border-color: #c0c0c0;
+    background: rgba(192, 192, 192, 0.06);
+}
+
+.rank-card.rank-3 {
+    border-color: #cd7f32;
+    background: rgba(205, 127, 50, 0.06);
+}
+
+.rank-pos {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.3rem, 4.5vw, 1.6rem);
+    min-width: 32px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.rank-card.rank-1 .rank-pos {
+    color: #ffd700;
+}
+
+.rank-card.rank-2 .rank-pos {
+    color: #c0c0c0;
+}
+
+.rank-card.rank-3 .rank-pos {
+    color: #cd7f32;
+}
+
+.rank-name {
+    flex: 1;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+    color: var(--white);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rank-pts {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.3rem, 4.5vw, 1.5rem);
+    color: var(--yellow);
+    white-space: nowrap;
+}
+
+.rank-pts-label {
+    font-family: 'Barlow', sans-serif;
+    font-size: var(--fs-xs);
+    color: rgba(255, 255, 255, 0.45);
+    text-align: right;
+}
+
+/* ── Status jogos (ranking) ────────────────────────────── */
+.jogo-status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-xs);
+    margin-bottom: var(--sp-md);
+}
+
+.jogo-status-card {
+    border-radius: 10px;
+    padding: var(--sp-sm);
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--card-bg);
+}
+
+.jogo-status-card.encerrado {
+    border-color: rgba(0, 156, 59, 0.5);
+    background: rgba(0, 156, 59, 0.12);
+}
+
+.jogo-status-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--fs-xs);
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.jogo-status-score {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(1.1rem, 3.5vw, 1.4rem);
+    color: var(--yellow);
+    line-height: 1.1;
+}
+
+.jogo-status-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+}
+
+/* ── Expander ──────────────────────────────────────────── */
+.streamlit-expanderHeader {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--card-bd) !important;
+    border-radius: 8px !important;
+    color: var(--white) !important;
+    font-family: 'Barlow Condensed', sans-serif !important;
+    font-weight: 700 !important;
+}
+
+/* ── Alertas ───────────────────────────────────────────── */
+.stSuccess>div {
+    background: rgba(0, 156, 59, 0.18) !important;
+    border: 1px solid var(--green) !important;
+    border-radius: 10px !important;
+    color: #7fffb0 !important;
+}
+
+.stError>div {
+    background: rgba(200, 16, 46, 0.18) !important;
+    border: 1px solid rgba(200, 16, 46, 0.5) !important;
+    border-radius: 10px !important;
+}
+
+.stWarning>div {
+    background: rgba(245, 166, 35, 0.15) !important;
+    border: 1px solid rgba(245, 166, 35, 0.4) !important;
+    border-radius: 10px !important;
+}
+
+.stInfo>div {
+    background: rgba(26, 20, 100, 0.4) !important;
+    border: 1px solid var(--card-bd) !important;
+    border-radius: 10px !important;
+}
+
+/* ── Admin ─────────────────────────────────────────────── */
+.admin-section {
+    background: rgba(200, 16, 46, 0.07);
+    border: 1px solid rgba(200, 16, 46, 0.25);
+    border-radius: 12px;
+    padding: var(--sp-md);
+    margin-bottom: var(--sp-md);
+}
+
+/* ── Palpite salvo (somente leitura) ───────────────────── */
+.saved-badge {
+    background: rgba(0, 156, 59, 0.15);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: var(--sp-sm) var(--sp-md);
+    margin-bottom: var(--sp-md);
+}
+
+.saved-score-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card-bg);
+    border: 1px solid var(--card-bd);
+    border-radius: 10px;
+    padding: clamp(8px, 2vw, 12px) clamp(10px, 3vw, 16px);
+    margin-bottom: 6px;
+}
+
+.saved-classif-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-sm);
+    background: var(--card-bg);
+    border: 1px solid var(--card-bd);
+    border-radius: 10px;
+    padding: 8px 16px;
+    margin-bottom: 6px;
+}
+
+/* ── Confirmação 2 etapas ──────────────────────────────── */
+.confirm-box {
+    background: rgba(200, 16, 46, 0.1);
+    border: 1px solid rgba(200, 16, 46, 0.35);
+    border-radius: 12px;
+    padding: var(--sp-md);
+    margin-bottom: var(--sp-sm);
+}
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 223, 0, 0.3);
+    border-radius: 3px;
+}
+
+/* ── Mobile overrides (<480px) ─────────────────────────── */
+@media (max-width: 480px) {
+    .main .block-container {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .desc-pts-row {
+        flex-direction: column;
+    }
+
+    .jogo-status-grid {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .money-footer {
+        flex-direction: column;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        font-size: 0.7rem !important;
+        padding: 6px 6px !important;
+        letter-spacing: 0 !important;
+    }
+
+
+}
