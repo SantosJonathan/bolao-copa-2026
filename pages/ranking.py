@@ -6,9 +6,9 @@ MEDAL = {1: "🥇", 2: "🥈", 3: "🥉"}
 RANK_CLASS = {1: "rank-1", 2: "rank-2", 3: "rank-3"}
 
 JOGOS_INFO = [
-    ('jogo1', 'Jogo 1', '13/06', 'Marrocos'),
-    ('jogo2', 'Jogo 2', '19/06', 'Haiti'),
-    ('jogo3', 'Jogo 3', '24/06', 'Escócia'),
+    ('jogo1', 'Jogo 1', '13/06', '🇲🇦 Marrocos'),
+    ('jogo2', 'Jogo 2', '19/06', '🇭🇹 Haiti'),
+    ('jogo3', 'Jogo 3', '24/06', '🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escócia'),
 ]
 
 
@@ -26,7 +26,7 @@ def render():
             st.markdown(f"""
             <div class="jogo-status-card encerrado">
                 <div class="jogo-status-title">{jlabel} · {jdata}</div>
-                <div class="jogo-status-score">{real['brasil']} × {real['adversario']}</div>
+                <div class="jogo-status-score">🇧🇷 {real['brasil']} × {real['adversario']}</div>
                 <div class="jogo-status-tag" style="color:#7fffb0;">✅ Encerrado</div>
             </div>
             """, unsafe_allow_html=True)
@@ -80,20 +80,20 @@ def render():
 
         with st.expander(f"Detalhes — {entry['nome']}", expanded=False):
             det = entry['detail']
-            adv_names = {'jogo1': 'Marrocos', 'jogo2': 'Haiti', 'jogo3': 'Escócia'}
+            adv_names = {'jogo1': '🇲🇦 Marrocos', 'jogo2': '🇭🇹 Haiti', 'jogo3': '🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escócia'}
 
             for jkey, jadv in adv_names.items():
                 d = det.get(jkey, {})
                 status = d.get('status')
                 if status == 'exato':
                     p = d['palpite']
-                    st.markdown(f"Brasil {p[0]}×{p[1]} {jadv} ✅ **+50 pts**")
+                    st.markdown(f"🇧🇷 Brasil {p[0]}×{p[1]} {jadv} ✅ **+50 pts**")
                 elif status == 'errado':
                     p, r = d['palpite'], d['real']
-                    st.markdown(f"Brasil {p[0]}×{p[1]} {jadv} ❌ (real: {r[0]}×{r[1]})")
+                    st.markdown(f"🇧🇷 Brasil {p[0]}×{p[1]} {jadv} ❌ (real: {r[0]}×{r[1]})")
                 elif status == 'pendente':
                     p = d.get('palpite', ('—','—'))
-                    st.markdown(f"Brasil {p[0] if p else '?'}×{p[1] if p else '?'} {jadv} ⏳")
+                    st.markdown(f"🇧🇷 Brasil {p[0] if p else '?'}×{p[1] if p else '?'} {jadv} ⏳")
                 else:
                     st.markdown(f"{jadv} — sem palpite")
 
