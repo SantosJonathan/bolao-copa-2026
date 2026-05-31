@@ -487,7 +487,7 @@ const DATA = {JS_DATA};
 
 // ── Tabs ──────────────────────────────────────────────────
 function showTab(id) {{
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   event.target.classList.add('active');
@@ -505,28 +505,32 @@ function showMsg(txt, ok) {{
 function checkNome(val) {{
   const nome = val.trim();
   document.getElementById('nome-display').textContent = nome || '—';
-  document.getElementById('form-body').style.display  = nome ? 'block' : 'none';
-  document.getElementById('saved-view').style.display = 'none';
 
-  if (!nome) return;
+  if (!nome) {{
+    document.getElementById('form-body').style.display  = 'none';
+    document.getElementById('saved-view').style.display = 'none';
+    return;
+  }}
 
-  // Busca no ranking se já existe
   const entry = DATA.ranking.find(r => r.nome.toLowerCase() === nome.toLowerCase());
   if (entry) {{
     document.getElementById('form-body').style.display  = 'none';
     document.getElementById('saved-view').style.display = 'block';
-    document.getElementById('saved-msg').innerHTML =
-      '✅ Palpite de <b>' + entry.nome + '</b> já registrado!';
+    document.getElementById('saved-msg').innerHTML = '✅ Palpite de <b>' + entry.nome + '</b> já registrado!';
     renderSavedJogos(entry);
+  }} else {{
+    document.getElementById('form-body').style.display  = 'block';
+    document.getElementById('saved-view').style.display = 'none';
   }}
 }}
 
 function renderSavedJogos(entry) {{
-  const advs = ['MARROCOS','HAITI','ESCÓCIA'];
+  const advs  = ['MARROCOS','HAITI','ESCÓCIA'];
   const datas = ['13/06','19/06','24/06'];
   let html = '';
   entry.jogos.forEach((j,i) => {{
-    const gb = j.palpite[0] ?? '?', ga = j.palpite[1] ?? '?';
+    const gb = j.palpite.length ? j.palpite[0] : '?';
+    const ga = j.palpite.length ? j.palpite[1] : '?';
     html += `
     <div class="jogo-card">
       <div class="jogo-titulo">JOGO ${{i+1}} (${{datas[i]}})</div>
@@ -544,38 +548,41 @@ function renderSavedJogos(entry) {{
 }}
 
 // ── Data de hoje ──────────────────────────────────────────
-const hoje = new Date().toLocaleDateString('pt-BR');
-document.getElementById('data-display').textContent = hoje;
+document.getElementById('data-display').textContent = new Date().toLocaleDateString('pt-BR');
 
 // ── Submit ────────────────────────────────────────────────
 function submitPalpite() {{
   const nome = document.getElementById('nome').value.trim();
-  const c1=document.getElementById('c1').value, c2=document.getElementById('c2').value;
-  const c3=document.getElementById('c3').value, c4=document.getElementById('c4').value;
+  const c1 = document.getElementById('c1').value;
+  const c2 = document.getElementById('c2').value;
+  const c3 = document.getElementById('c3').value;
+  const c4 = document.getElementById('c4').value;
   if (!nome) {{ showMsg('Informe seu nome!', false); return; }}
   if (!c1||!c2||!c3||!c4) {{ showMsg('Selecione os 4 colocados!', false); return; }}
   if (new Set([c1,c2,c3,c4]).size !== 4) {{ showMsg('Selecione times diferentes!', false); return; }}
   document.getElementById('btn-submit-area').style.display = 'none';
   document.getElementById('confirm-box').style.display = 'block';
 }}
+
 function cancelConfirm() {{
   document.getElementById('btn-submit-area').style.display = 'block';
   document.getElementById('confirm-box').style.display = 'none';
 }}
+
 function confirmSubmit() {{
   const p = new URLSearchParams({{
-    action:'submit',
-    nome:  document.getElementById('nome').value.trim(),
-    j1b:   document.getElementById('j1b').value,
-    j1a:   document.getElementById('j1a').value,
-    j2b:   document.getElementById('j2b').value,
-    j2a:   document.getElementById('j2a').value,
-    j3b:   document.getElementById('j3b').value,
-    j3a:   document.getElementById('j3a').value,
-    c1:    document.getElementById('c1').value,
-    c2:    document.getElementById('c2').value,
-    c3:    document.getElementById('c3').value,
-    c4:    document.getElementById('c4').value,
+    action: 'submit',
+    nome:   document.getElementById('nome').value.trim(),
+    j1b:    document.getElementById('j1b').value,
+    j1a:    document.getElementById('j1a').value,
+    j2b:    document.getElementById('j2b').value,
+    j2a:    document.getElementById('j2a').value,
+    j3b:    document.getElementById('j3b').value,
+    j3a:    document.getElementById('j3a').value,
+    c1:     document.getElementById('c1').value,
+    c2:     document.getElementById('c2').value,
+    c3:     document.getElementById('c3').value,
+    c4:     document.getElementById('c4').value,
   }});
   window.location.search = p.toString();
 }}
@@ -583,102 +590,136 @@ function confirmSubmit() {{
 // ── Ranking ───────────────────────────────────────────────
 function buildRanking() {{
   // Status dos jogos
-  const sg = document.getElementById('status-grid');
-  sg.innerHTML = DATA.jogos.map(j => {{
+  document.getElementById('status-grid').innerHTML = DATA.jogos.map(j => {{
     const enc = j.encerrado;
     return `<div class="status-card ${{enc?'enc':''}}">
       <div class="status-jogo">Jogo ${{j.key.slice(-1)}} · ${{j.data}}</div>
       ${{enc
-        ? `<div class="status-placar">🇧🇷 ${{j.brasil}} × ${{j.adversario}}</div><div class="status-tag" style="color:#7fffb0">✅ Encerrado</div>`
+        ? `<div class="status-placar">Brasil ${{j.brasil}} × ${{j.adversario}}</div><div class="status-tag" style="color:#7fffb0">✅ Encerrado</div>`
         : `<div class="status-placar" style="font-size:0.9rem;color:rgba(255,255,255,.3)">—</div><div class="status-tag" style="color:rgba(255,255,255,.3)">⏳ Pendente</div>`
       }}
     </div>`;
   }}).join('');
 
-  // Lista ranking
   const medals = ['🥇','🥈','🥉'];
-  const rc     = ['r1','r2','r3'];
+  const rcs    = ['r1','r2','r3'];
   const rl     = document.getElementById('ranking-list');
+
   if (!DATA.ranking.length) {{
     rl.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,.3);font-weight:700;">NENHUM PALPITE AINDA 🎯</div>';
     return;
   }}
+
   rl.innerHTML = `<div style="text-align:right;color:rgba(255,255,255,.35);font-size:0.78rem;margin-bottom:8px;">${{DATA.ranking.length}} participante(s)</div>`;
 
   DATA.ranking.forEach(e => {{
-    const i    = e.pos - 1;
-    const med  = medals[i] || e.pos+'°';
-    const cls  = rc[i] || '';
+    const idx = e.pos - 1;
+    const med = medals[idx] || (e.pos + '°');
+    const cls = rcs[idx]    || '';
+
+    // Card clicável
     const card = document.createElement('div');
     card.className = 'rank-card ' + cls;
     card.innerHTML = `
       <div class="rank-pos">${{med}}</div>
       <div class="rank-nome">${{e.nome.toUpperCase()}}</div>
-      <div><div class="rank-pts-val">${{e.total}}</div><div class="rank-pts-lbl">PONTOS</div></div>`;
+      <div>
+        <div class="rank-pts-val">${{e.total}}</div>
+        <div class="rank-pts-lbl">PONTOS</div>
+      </div>`;
     card.onclick = () => toggleDetail(e.pos);
     rl.appendChild(card);
 
     // Painel de detalhes
-    const advs  = ['🇲🇦 Marrocos','🇭🇹 Haiti','🏴󠁧󠁢󠁳󠁣󠁴󠁿 Escócia'];
+    const advs  = ['Marrocos','Haiti','Escócia'];
     const panel = document.createElement('div');
     panel.id        = 'detail-' + e.pos;
     panel.className = 'detail-panel';
 
     let dhtml = '';
-    e.jogos.forEach((j,ji) => {{
-      if (j.status==='exato')  dhtml += `<div class="detail-line">${{advs[ji]}}: ${{j.palpite[0]}}×${{j.palpite[1]}} <span class="ok-tag">✅ +50pts</span></div>`;
-      else if(j.status==='errado') dhtml += `<div class="detail-line">${{advs[ji]}}: ${{j.palpite[0]}}×${{j.palpite[1]}} <span class="err-tag">❌ (real: ${{j.real[0]}}×${{j.real[1]}})</span></div>`;
-      else dhtml += `<div class="detail-line">${{advs[ji]}}: ${{j.palpite.length?j.palpite[0]+'×'+j.palpite[1]:'—'}} <span class="pend-tag">⏳</span></div>`;
+    e.jogos.forEach((j, ji) => {{
+      const adv = advs[ji];
+      if (j.status === 'exato') {{
+        dhtml += `<div class="detail-line">Brasil ${{j.palpite[0]}}×${{j.palpite[1]}} ${{adv}} <span class="ok-tag">✅ +50pts</span></div>`;
+      }} else if (j.status === 'errado') {{
+        dhtml += `<div class="detail-line">Brasil ${{j.palpite[0]}}×${{j.palpite[1]}} ${{adv}} <span class="err-tag">❌ (real: ${{j.real[0]}}×${{j.real[1]}})</span></div>`;
+      }} else {{
+        const pal = j.palpite.length ? j.palpite[0]+'×'+j.palpite[1] : '—';
+        dhtml += `<div class="detail-line">Brasil ${{pal}} ${{adv}} <span class="pend-tag">⏳</span></div>`;
+      }}
     }});
 
     if (e.classif_palpite.length) {{
-      dhtml += '<div class="detail-line" style="margin-top:6px;font-weight:700;">Classificação:</div>';
-      const emojis=['🥇','🥈','🥉','4️⃣'];
-      e.classif_palpite.forEach((t,ci) => {{
-        const st = e.classif_status[String(ci+1)];
-        const tag = st==='acerto' ? '<span class="ok-tag">✅ +30pts</span>'
-                  : st==='errado' ? `<span class="err-tag">❌ (era ${{e.classif_real[ci]}})</span>`
-                  : '<span class="pend-tag">⏳</span>';
-        dhtml += `<div class="detail-line">${{emojis[ci]}} ${{t}} ${{tag}}</div>`;
+      dhtml += '<div class="detail-line" style="margin-top:6px;font-weight:700;border-bottom:none;">Classificação palpitada:</div>';
+      const posIcons = ['🥇','🥈','🥉','4°'];
+      e.classif_palpite.forEach((t, ci) => {{
+        const st  = e.classif_status[String(ci+1)];
+        const tag = st === 'acerto'
+          ? '<span class="ok-tag">✅ +30pts</span>'
+          : st === 'errado'
+            ? `<span class="err-tag">❌ (era ${{e.classif_real[ci]||'?'}})</span>`
+            : '<span class="pend-tag">⏳</span>';
+        dhtml += `<div class="detail-line">${{posIcons[ci]}} ${{t}} ${{tag}}</div>`;
       }});
-      if (e.classif_status['gabarito']===true) dhtml += '<div class="detail-line"><span class="ok-tag">🏆 GABARITO! +100pts bônus</span></div>';
+      if (e.classif_status['gabarito'] === true) {{
+        dhtml += '<div class="detail-line"><span class="ok-tag">🏆 GABARITO COMPLETO! +100pts bônus</span></div>';
+      }}
     }}
     panel.innerHTML = dhtml;
     rl.appendChild(panel);
   }});
 
-  // Classificação final
+  // Classificação final publicada
   const cfa = document.getElementById('classif-final-area');
   if (DATA.classif_real.some(t => t)) {{
-    const emojis=['🥇','🥈','🥉','4️⃣'];
+    const posIcons = ['🥇','🥈','🥉','4°'];
     cfa.innerHTML = '<div class="sec-title">CLASSIFICAÇÃO FINAL · GRUPO C</div>'
-      + DATA.classif_real.map((t,i) => `<div class="cf-row"><span class="cf-pos">${{emojis[i]}}</span><span class="cf-nome">${{t}}</span></div>`).join('');
+      + DATA.classif_real.map((t,i) =>
+          `<div class="cf-row"><span class="cf-pos">${{posIcons[i]}}</span><span class="cf-nome">${{t}}</span></div>`
+        ).join('');
   }}
 }}
+
 function toggleDetail(pos) {{
-  const p = document.getElementById('detail-'+pos);
-  p.classList.toggle('open');
+  const p = document.getElementById('detail-' + pos);
+  if (p) p.classList.toggle('open');
 }}
 
-// ── Admin ─────────────────────────────────────────────────
+// ── Admin — senha client-side + submit server-side ────────
+const ADMIN_PWD = 'brasil2026';
+
+function checkAdminPwd() {{
+  const pwd = document.getElementById('admin-pwd').value;
+  const msg = document.getElementById('admin-pwd-msg');
+  if (pwd === ADMIN_PWD) {{
+    document.getElementById('admin-content').style.display = 'block';
+    msg.style.display = 'none';
+    buildAdmin();
+  }} else {{
+    msg.textContent      = '❌ Senha incorreta!';
+    msg.style.display    = 'block';
+    document.getElementById('admin-content').style.display = 'none';
+  }}
+}}
+
 function buildAdmin() {{
-  const advs  = ['MARROCOS','HAITI','ESCÓCIA'];
-  const datas = ['13/06','19/06','24/06'];
-  const keys  = ['jogo1','jogo2','jogo3'];
+  const advs = ['MARROCOS','HAITI','ESCÓCIA'];
+  const keys = ['jogo1','jogo2','jogo3'];
   let ph = '';
-  DATA.jogos.forEach((j,i) => {{
-    const vb = j.brasil??0, va = j.adversario??0;
+  DATA.jogos.forEach((j, i) => {{
+    const vb = j.brasil    ?? 0;
+    const va = j.adversario ?? 0;
     ph += `
     <div class="admin-section">
       <b style="font-size:0.9rem;">Jogo ${{i+1}} (${{j.data}}) — Brasil × ${{advs[i]}}</b>
-      ${{j.encerrado ? `<div style="color:#7fffb0;font-size:0.82rem;margin:6px 0;">✅ Placar salvo: Brasil ${{vb}} × ${{va}}</div>` : ''}}
+      ${{j.encerrado ? `<div style="color:#7fffb0;font-size:0.82rem;margin:6px 0;">✅ Salvo: Brasil ${{vb}} × ${{va}}</div>` : ''}}
       <div class="admin-grid">
         <span style="font-weight:700;font-size:0.88rem;">Brasil</span>
         <input class="admin-input" id="r${{i+1}}b" type="number" min="0" max="20" value="${{vb}}">
         <span style="text-align:center;font-weight:900;">×</span>
         <input class="admin-input" id="r${{i+1}}a" type="number" min="0" max="20" value="${{va}}">
       </div>
-      <label style="font-size:0.82rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:8px;margin-top:6px;">
+      <label style="font-size:0.82rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;">
         <input type="checkbox" id="enc_${{keys[i]}}" ${{j.encerrado?'checked':''}}>
         Marcar como encerrado
       </label>
@@ -689,53 +730,41 @@ function buildAdmin() {{
   const times = ['BRASIL','MARROCOS','HAITI','ESCÓCIA'];
   const cr    = DATA.classif_real;
   let ch = '';
-  for (let i=1;i<=4;i++) {{
-    const cur = cr[i-1]||'';
+  for (let i = 1; i <= 4; i++) {{
+    const cur = (cr[i-1] || '').toUpperCase();
     ch += `<div class="input-label">${{i}}º Colocado</div>
     <select id="rc${{i}}" class="input-field">
       <option value="">-- Selecione --</option>
-      ${{times.map(t=>`<option value="${{t}}" ${{t===cur?'selected':''}}>${{t}}</option>`).join('')}}
+      ${{times.map(t => `<option value="${{t}}" ${{t===cur?'selected':''}}>${{t}}</option>`).join('')}}
     </select>`;
   }}
   document.getElementById('admin-classif').innerHTML = ch;
 }}
 
-// ── Admin password gate ───────────────────────────────────
-const ADMIN_PWD = 'brasil2026';
-function checkAdminPwd() {{
+function adminSavePlacar() {{
   const pwd = document.getElementById('admin-pwd').value;
-  const msg = document.getElementById('admin-pwd-msg');
-  if (pwd === ADMIN_PWD) {{
-    document.getElementById('admin-content').style.display = 'block';
-    document.getElementById('admin-pwd-msg').style.display = 'none';
-    buildAdmin();
-  }} else {{
-    msg.textContent = '❌ Senha incorreta!';
-    msg.style.display = 'block';
-    document.getElementById('admin-content').style.display = 'none';
-  }}
-}}
-  const pwd = document.getElementById('admin-pwd').value;
-  const p = new URLSearchParams({{action:'admin_save_placar',pwd}});
-  ['jogo1','jogo2','jogo3'].forEach((k,i) => {{
-    p.set('r'+(i+1)+'b', document.getElementById('r'+(i+1)+'b').value||0);
-    p.set('r'+(i+1)+'a', document.getElementById('r'+(i+1)+'a').value||0);
-    if (document.getElementById('enc_'+k).checked) p.set('enc_'+k,'1');
+  const p   = new URLSearchParams({{action:'admin_save_placar', pwd}});
+  ['jogo1','jogo2','jogo3'].forEach((k, i) => {{
+    p.set('r'+(i+1)+'b', document.getElementById('r'+(i+1)+'b').value || 0);
+    p.set('r'+(i+1)+'a', document.getElementById('r'+(i+1)+'a').value || 0);
+    if (document.getElementById('enc_'+k).checked) p.set('enc_'+k, '1');
   }});
   window.location.search = p.toString();
 }}
+
 function adminSaveClassif() {{
   const pwd = document.getElementById('admin-pwd').value;
-  const p = new URLSearchParams({{action:'admin_save_classif',pwd}});
-  for(let i=1;i<=4;i++) p.set('rc'+i, document.getElementById('rc'+i).value);
+  const p   = new URLSearchParams({{action:'admin_save_classif', pwd}});
+  for (let i = 1; i <= 4; i++) {{
+    p.set('rc'+i, document.getElementById('rc'+i).value);
+  }}
   window.location.search = p.toString();
 }}
 
 // ── Init ──────────────────────────────────────────────────
 buildRanking();
-buildAdmin();
+// Admin só é construído quando senha for validada — NÃO chamar buildAdmin() aqui
 
-// Mostra mensagem se houver
 if (DATA.msg) showMsg(DATA.msg, DATA.msg_ok);
 </script>
 </body>
