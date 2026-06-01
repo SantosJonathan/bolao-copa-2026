@@ -103,7 +103,7 @@ def handle_action():
                 (c1,c2,c3,c4),
             )
             if ok:
-                st.session_state.msg    = f"✅ Palpite de {nome} registrado! Boa sorte 🇧🇷"
+                st.session_state.msg    = f"✅ Palpite de {nome} registrado! Boa sorte"
                 st.session_state.msg_ok = True
                 st.session_state.page   = "form"
             else:
