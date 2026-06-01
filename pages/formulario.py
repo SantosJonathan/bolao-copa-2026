@@ -330,7 +330,7 @@ def render():
         st.session_state.confirmar_palpite = False
 
     if not st.session_state.confirmar_palpite:
-        if st.button("ENVIAR PALPITE 🇧🇷"):
+        if st.button("ENVIAR PALPITE"):
             if "" in selecionados or len(set(s for s in selecionados if s)) != 4:
                 st.error("❌ Selecione os 4 colocados sem repetir times.")
             elif not classif_ok:
@@ -351,7 +351,7 @@ def render():
                 ok = save_palpite(nome, placares, tuple(classif_final))
                 st.session_state.confirmar_palpite = False
                 if ok:
-                    st.success(f"🎉 Palpite de **{nome}** registrado! Boa sorte 🇧🇷")
+                    st.success(f"🎉 Palpite de **{nome}** registrado! Boa sorte")
                     st.balloons()
                     st.rerun()
                 else:

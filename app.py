@@ -10,7 +10,7 @@ from utils.scoring import calculate_scores
 
 st.set_page_config(
     page_title="Bolão Copa 2026",
-    page_icon="🇧🇷",
+    page_icon="",
     layout="centered",
     initial_sidebar_state="collapsed",
 )

@@ -62,17 +62,19 @@ if not USE_POSTGRES:
 #  pg8000 é pure-Python — funciona em qualquer versão Python
 # ══════════════════════════════════════════════════════════
 else:
+    import ssl
     import pg8000.native as pg8000
     from urllib.parse import urlparse
 
     _parsed = urlparse(DATABASE_URL)
+
     _PG_PARAMS = dict(
-        host     = _parsed.hostname,
-        port     = _parsed.port or 5432,
-        database = _parsed.path.lstrip("/"),
-        user     = _parsed.username,
-        password = _parsed.password,
-        ssl_context = True,   # Supabase exige SSL
+        host=_parsed.hostname,
+        port=_parsed.port or 5432,
+        database=_parsed.path.lstrip("/"),
+        user=_parsed.username,
+        password=_parsed.password,
+        ssl_context=ssl.create_default_context(),
     )
 
     # Conexão simples por thread (pg8000 não tem pool nativo leve)
