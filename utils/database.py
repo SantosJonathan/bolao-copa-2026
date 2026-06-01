@@ -64,7 +64,7 @@ if not USE_POSTGRES:
 else:
     import ssl
     import pg8000.native as pg8000
-    from urllib.parse import urlparse
+    from urllib.parse import urlparse, unquote
 
     _parsed = urlparse(DATABASE_URL)
 
@@ -73,7 +73,7 @@ else:
         port=_parsed.port or 5432,
         database=_parsed.path.lstrip("/"),
         user=_parsed.username,
-        password=_parsed.password,
+        password = unquote(_parsed.password),
         ssl_context=ssl.create_default_context(),
     )
 
