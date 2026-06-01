@@ -2,9 +2,9 @@ import streamlit as st
 import json
 from utils.database import (
     init_db, save_palpite, palpite_enviado,
-    save_placar_real, save_classificacao_real,
-    get_placares_reais, get_classificacao_real,
-    get_palpite_completo_por_nome,
+    get_palpite_completo_por_nome, save_placar_real,
+    save_classificacao_real, get_placares_reais,
+    get_classificacao_real,
 )
 from utils.scoring import calculate_scores
 
@@ -18,7 +18,7 @@ st.set_page_config(
 st.markdown("""
 <style>
   #MainMenu, footer, header, .stDeployButton { visibility: hidden !important; }
-  .block-container { padding: 0 !important; max-width: 100% !important; }
+  .block-container { padding: 0 !important; max-width: 680px !important; }
   .stApp { background: #1a1464; }
 </style>
 """, unsafe_allow_html=True)
@@ -26,26 +26,30 @@ st.markdown("""
 init_db()
 
 # ── session state ─────────────────────────────────────────
-for k, v in [("msg",""),("msg_ok",True),("tab","form"),("confirmed",False)]:
+for k,v in [("msg",""),("msg_ok",True),("confirmed",False)]:
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ── Processa form submissions ─────────────────────────────
-def handle_forms():
-    # --- enviar palpite ---
-    if st.session_state.get("_submit_palpite"):
-        nome = st.session_state.get("f_nome","").strip()
-        j1b  = int(st.session_state.get("f_j1b") or 0)
-        j1a  = int(st.session_state.get("f_j1a") or 0)
-        j2b  = int(st.session_state.get("f_j2b") or 0)
-        j2a  = int(st.session_state.get("f_j2a") or 0)
-        j3b  = int(st.session_state.get("f_j3b") or 0)
-        j3a  = int(st.session_state.get("f_j3a") or 0)
-        c1   = st.session_state.get("f_c1","")
-        c2   = st.session_state.get("f_c2","")
-        c3   = st.session_state.get("f_c3","")
-        c4   = st.session_state.get("f_c4","")
-        st.session_state["_submit_palpite"] = False
+# ── Processa query params vindos do HTML (parent window) ──
+qp = st.query_params
+
+def handle_action():
+    action = qp.get("action","")
+    if not action:
+        return
+
+    if action == "submit":
+        nome = qp.get("nome","").strip()
+        j1b  = int(qp.get("j1b","0") or 0)
+        j1a  = int(qp.get("j1a","0") or 0)
+        j2b  = int(qp.get("j2b","0") or 0)
+        j2a  = int(qp.get("j2a","0") or 0)
+        j3b  = int(qp.get("j3b","0") or 0)
+        j3a  = int(qp.get("j3a","0") or 0)
+        c1   = qp.get("c1","")
+        c2   = qp.get("c2","")
+        c3   = qp.get("c3","")
+        c4   = qp.get("c4","")
 
         if not nome:
             st.session_state.msg    = "❌ Informe seu nome!"
@@ -60,39 +64,29 @@ def handle_forms():
             ok = save_palpite(nome,
                 {"jogo1":(j1b,j1a),"jogo2":(j2b,j2a),"jogo3":(j3b,j3a)},
                 (c1,c2,c3,c4))
-            if ok:
-                st.session_state.msg      = f"🎉 Palpite de {nome} registrado! Boa sorte 🇧🇷"
-                st.session_state.msg_ok   = True
-                st.session_state.confirmed = False
-            else:
-                st.session_state.msg    = "❌ Palpite já registrado e não pode ser alterado."
-                st.session_state.msg_ok = False
+            st.session_state.msg    = (f"🎉 Palpite de {nome} registrado! Boa sorte 🇧🇷"
+                                        if ok else "❌ Palpite já registrado.")
+            st.session_state.msg_ok = ok
+        st.query_params.clear()
         st.rerun()
 
-    # --- admin salvar placares ---
-    if st.session_state.get("_admin_save_placar"):
-        st.session_state["_admin_save_placar"] = False
-        pwd = st.session_state.get("admin_pwd","")
-        if pwd == "brasil2026":
-            for jkey, kb, ka in [("jogo1","ar1b","ar1a"),("jogo2","ar2b","ar2a"),("jogo3","ar3b","ar3a")]:
-                if st.session_state.get(f"enc_{jkey}"):
-                    jb = int(st.session_state.get(kb) or 0)
-                    ja = int(st.session_state.get(ka) or 0)
-                    save_placar_real(jkey, jb, ja)
+    elif action == "admin_placar":
+        if qp.get("pwd","") == "brasil2026":
+            for jkey,jb_k,ja_k in [("jogo1","r1b","r1a"),("jogo2","r2b","r2a"),("jogo3","r3b","r3a")]:
+                if qp.get(f"enc_{jkey}"):
+                    save_placar_real(jkey,int(qp.get(jb_k,0) or 0),int(qp.get(ja_k,0) or 0))
             st.session_state.msg    = "✅ Placares salvos!"
             st.session_state.msg_ok = True
         else:
             st.session_state.msg    = "❌ Senha incorreta!"
             st.session_state.msg_ok = False
+        st.query_params.clear()
         st.rerun()
 
-    # --- admin salvar classificação ---
-    if st.session_state.get("_admin_save_classif"):
-        st.session_state["_admin_save_classif"] = False
-        pwd = st.session_state.get("admin_pwd","")
-        if pwd == "brasil2026":
-            ordem = [st.session_state.get(f"arc{i}","") for i in range(1,5)]
-            if len(set(ordem)) == 4 and all(ordem):
+    elif action == "admin_classif":
+        if qp.get("pwd","") == "brasil2026":
+            ordem = [qp.get(f"rc{i}","") for i in range(1,5)]
+            if len(set(ordem))==4 and all(ordem):
                 save_classificacao_real([t.upper() for t in ordem])
                 st.session_state.msg    = "✅ Classificação salva!"
                 st.session_state.msg_ok = True
@@ -102,284 +96,300 @@ def handle_forms():
         else:
             st.session_state.msg    = "❌ Senha incorreta!"
             st.session_state.msg_ok = False
+        st.query_params.clear()
         st.rerun()
 
-handle_forms()
+handle_action()
 
-# ── Dados ────────────────────────────────────────────────
+# ── Dados ─────────────────────────────────────────────────
 placares_reais     = get_placares_reais()
 classificacao_real = get_classificacao_real()
 scores             = calculate_scores()
 
-JOGOS = [
-    ("jogo1","MARROCOS","13/06"),
-    ("jogo2","HAITI","19/06"),
-    ("jogo3","ESCÓCIA","24/06"),
-]
+JOGOS = [("jogo1","MARROCOS","13/06"),("jogo2","HAITI","19/06"),("jogo3","ESCÓCIA","24/06")]
 TIMES = ["BRASIL","MARROCOS","HAITI","ESCÓCIA"]
 
-# ── CSS global ────────────────────────────────────────────
-st.markdown("""
+jogos_js = []
+for jkey,adv,data in JOGOS:
+    r = placares_reais.get(jkey,{})
+    jogos_js.append({"key":jkey,"adv":adv,"data":data,
+                     "enc":bool(r.get("encerrado")),
+                     "brasil":r.get("brasil"),"adversario":r.get("adversario")})
+
+ranking_js = []
+for i,e in enumerate(scores,1):
+    det = e["detail"]
+    jd  = []
+    for jkey,_,_ in JOGOS:
+        d = det.get(jkey,{})
+        jd.append({"status":d.get("status","pendente"),
+                   "palpite":list(d["palpite"]) if "palpite" in d else [],
+                   "real":list(d["real"]) if "real" in d else []})
+    cl = det.get("classificacao",{})
+    ranking_js.append({"pos":i,"nome":e["nome"],"total":e["total"],"jogos":jd,
+        "cp":cl.get("palpite",[]),"cr":cl.get("real",[]),
+        "cs":{str(k):v for k,v in cl.get("status",{}).items()},
+        "cpts":cl.get("pontos",0)})
+
+cr_lista = [classificacao_real.get(i,"") for i in range(1,5)]
+
+MSG    = st.session_state.msg
+MSG_OK = st.session_state.msg_ok
+st.session_state.msg = ""
+
+JS_DATA = json.dumps({"jogos":jogos_js,"ranking":ranking_js,
+                      "cr":cr_lista,"msg":MSG,"msg_ok":MSG_OK},ensure_ascii=False)
+
+# ── HTML completo ─────────────────────────────────────────
+HTML = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&family=Barlow:wght@400;600&display=swap');
-html,body,.stApp { background:#1a1464 !important; font-family:'Barlow',sans-serif; }
-.block-container { padding:0 !important; max-width:100% !important; }
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:Arial,sans-serif;background:#1a1464;color:#fff;min-height:100vh}}
 
-/* wrapper geral */
-.bolao-wrap { max-width:680px; margin:0 auto; padding:clamp(8px,3vw,20px); }
+/* TABS */
+.tabs{{display:flex;background:#0d0a38;border-bottom:3px solid #ffdf00;position:sticky;top:0;z-index:99}}
+.tab{{flex:1;padding:13px 4px;text-align:center;font-weight:900;font-size:clamp(.75rem,3.5vw,1rem);cursor:pointer;color:rgba(255,255,255,.5);border:none;background:none;letter-spacing:.5px}}
+.tab.active{{color:#1a1464;background:#ffdf00}}
 
-/* tabs */
-.bolao-tabs { display:flex; background:#0d0a38; border-bottom:3px solid #ffdf00; margin-bottom:0; }
-.bolao-tab  { flex:1; padding:14px 6px; text-align:center; font-family:'Barlow Condensed',sans-serif;
-              font-weight:900; font-size:clamp(0.75rem,3.5vw,1rem); letter-spacing:.5px;
-              color:rgba(255,255,255,.5); cursor:pointer; border:none; background:none; }
-.bolao-tab.active { color:#1a1464; background:#ffdf00; }
+.page{{display:none;padding:clamp(10px,3vw,20px);max-width:680px;margin:0 auto}}
+.page.active{{display:block}}
 
-/* header */
-.b-titulo { display:flex; justify-content:space-between; align-items:center;
-            margin-bottom:12px; flex-wrap:wrap; gap:6px; }
-.b-titulo h1 { font-family:'Barlow Condensed',sans-serif; font-size:clamp(1.3rem,6vw,2rem);
-               font-weight:900; text-transform:uppercase; color:#fff; margin:0; }
-.b-grupo { background:#009c3b; color:#fff; font-weight:900; font-size:clamp(.8rem,3vw,1rem);
-           padding:4px 12px; border-radius:20px; }
+/* HEADER */
+.titulo{{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px}}
+.titulo h1{{font-size:clamp(1.3rem,6vw,2rem);font-weight:900;text-transform:uppercase;color:#fff}}
+.grupo-badge{{background:#009c3b;color:#fff;font-weight:900;font-size:clamp(.8rem,3vw,1rem);padding:4px 12px;border-radius:20px}}
 
-/* brasil banner */
-.b-banner { display:flex; align-items:stretch; background:#fff; border-radius:14px;
-            overflow:hidden; margin-bottom:16px; min-height:clamp(64px,18vw,96px); }
-.b-flag   { background:#009c3b; width:42%; display:flex; align-items:center;
-            justify-content:center; padding:clamp(8px,2.5vw,18px); }
-.b-diamond{ background:#ffdf00; width:clamp(60px,16vw,100px); height:clamp(34px,9vw,56px);
-            clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);
-            display:flex; align-items:center; justify-content:center; }
-.b-circle { background:#1a1464; width:clamp(18px,4.5vw,28px); height:clamp(18px,4.5vw,28px);
-            border-radius:50%; display:flex; align-items:center; justify-content:center;
-            font-size:clamp(4px,1vw,6px); color:#fff; font-weight:900;
-            text-align:center; line-height:1.1; }
-.b-nome   { flex:1; display:flex; align-items:center; justify-content:center;
-            font-family:'Barlow Condensed',sans-serif;
-            font-size:clamp(1.6rem,7.5vw,2.8rem); font-weight:900;
-            color:#1a1464; letter-spacing:clamp(2px,1.5vw,6px); }
+/* BRASIL BANNER */
+.bb{{display:flex;align-items:stretch;background:#fff;border-radius:14px;overflow:hidden;margin-bottom:14px;min-height:clamp(64px,18vw,96px)}}
+.bb-flag{{background:#009c3b;width:42%;display:flex;align-items:center;justify-content:center;padding:clamp(8px,2.5vw,18px)}}
+.bb-diamond{{background:#ffdf00;width:clamp(60px,16vw,100px);height:clamp(34px,9vw,56px);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);display:flex;align-items:center;justify-content:center}}
+.bb-circle{{background:#1a1464;width:clamp(18px,4.5vw,28px);height:clamp(18px,4.5vw,28px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(4px,1vw,6px);color:#fff;font-weight:900;text-align:center;line-height:1.1}}
+.bb-nome{{flex:1;display:flex;align-items:center;justify-content:center;font-size:clamp(1.6rem,7.5vw,2.8rem);font-weight:900;color:#1a1464;letter-spacing:clamp(2px,1.5vw,6px)}}
 
-/* jogo card */
-.jogo-card  { background:#fff; border-radius:14px; margin-bottom:14px; overflow:hidden; }
-.jogo-titulo{ background:#e8e8f0; text-align:center; font-family:'Barlow Condensed',sans-serif;
-              font-weight:900; font-size:clamp(.8rem,3.5vw,1rem); padding:10px;
-              color:#2a1b6b; text-transform:uppercase; letter-spacing:1px; }
-.jogo-body  { display:grid;
-              grid-template-columns:1fr clamp(42px,12vw,60px) clamp(20px,5vw,28px) clamp(42px,12vw,60px) 1fr;
-              align-items:center; gap:clamp(4px,2vw,10px);
-              padding:clamp(10px,3vw,14px); }
-.jogo-time  { font-family:'Barlow Condensed',sans-serif; font-weight:900;
-              font-size:clamp(.78rem,3.5vw,1.05rem); color:#2a1b6b;
-              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.jogo-time.home { text-align:left; }
-.jogo-time.away { text-align:right; }
-.jogo-x     { font-family:'Barlow Condensed',sans-serif; font-weight:900;
-              font-size:clamp(.9rem,4vw,1.2rem); color:#2a1b6b; text-align:center; }
-.jogo-score { border:2.5px solid #1a1464; border-radius:8px; background:#f0f0f0;
-              color:#1a1464; font-family:'Barlow Condensed',sans-serif;
-              font-size:clamp(1rem,5vw,1.5rem); font-weight:900;
-              text-align:center; display:flex; align-items:center; justify-content:center;
-              width:100%; aspect-ratio:1; }
-.jogo-rodape{ background:#fff; text-align:center;
-              font-size:clamp(.68rem,2.8vw,.82rem); font-weight:700;
-              color:#2a1b6b; padding:8px; border-top:1px solid #eee; }
-.jogo-rodape .red { color:#e53935; font-weight:900; }
+/* INPUT NOME */
+.nome-input{{width:100%;padding:11px 14px;border:1.5px solid rgba(255,255,255,.25);border-radius:10px;background:rgba(255,255,255,.08);color:#fff;font-size:clamp(.9rem,3.5vw,1rem);outline:none;margin-bottom:12px}}
+.nome-input:focus{{border-color:#ffdf00}}
+.nome-input::placeholder{{color:rgba(255,255,255,.4)}}
 
-/* card branco genérico */
-.b-card { background:#fff; border-radius:14px; padding:clamp(10px,3vw,16px); margin-bottom:14px; }
-.b-card, .b-card * { color:#2a1b6b; }
-.b-card h3,.b-card h4 { font-family:'Barlow Condensed',sans-serif; font-weight:900;
-                         font-size:clamp(.9rem,4vw,1.1rem); margin:0 0 10px 0; }
+/* JOGO CARD */
+.jogo-card{{background:#fff;border-radius:14px;margin-bottom:14px;overflow:hidden}}
+.jogo-titulo{{background:#e8e8f0;text-align:center;font-weight:900;font-size:clamp(.8rem,3.5vw,1rem);padding:10px;color:#2a1b6b;text-transform:uppercase;letter-spacing:1px}}
+.jogo-body{{display:grid;grid-template-columns:1fr clamp(42px,12vw,60px) clamp(20px,5vw,28px) clamp(42px,12vw,60px) 1fr;align-items:center;gap:clamp(4px,2vw,10px);padding:clamp(10px,3vw,14px)}}
+.jt{{font-weight:900;font-size:clamp(.78rem,3.5vw,1.05rem);color:#2a1b6b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.jt.home{{text-align:left}}.jt.away{{text-align:right}}
+.jx{{font-weight:900;font-size:clamp(.9rem,4vw,1.2rem);color:#2a1b6b;text-align:center}}
+.jinput{{width:100%;aspect-ratio:1;border:2.5px solid #1a1464;border-radius:8px;background:#fff;color:#1a1464;font-size:clamp(1rem,5vw,1.5rem);font-weight:900;text-align:center;-moz-appearance:textfield;appearance:textfield;outline:none;padding:0;touch-action:manipulation}}
+.jinput::-webkit-outer-spin-button,.jinput::-webkit-inner-spin-button{{-webkit-appearance:none}}
+.jinput:focus{{border-color:#009c3b;box-shadow:0 0 0 3px rgba(0,156,59,.25)}}
+.jscore{{width:100%;aspect-ratio:1;border:2.5px solid #1a1464;border-radius:8px;background:#f0f0f0;color:#1a1464;font-size:clamp(1rem,5vw,1.5rem);font-weight:900;text-align:center;display:flex;align-items:center;justify-content:center}}
+.jrodape{{text-align:center;font-size:clamp(.68rem,2.8vw,.82rem);font-weight:700;color:#2a1b6b;padding:8px;border-top:1px solid #eee}}
+.jrodape .red{{color:#e53935;font-weight:900}}
 
-/* section title */
-.sec-title { font-family:'Barlow Condensed',sans-serif; font-weight:900;
-             font-size:clamp(.88rem,3.5vw,1.1rem); color:#fff; letter-spacing:2px;
-             border-left:4px solid #ffdf00; padding-left:10px;
-             margin:16px 0 10px; text-transform:uppercase; }
+/* CARDS */
+.card{{background:#fff;border-radius:14px;padding:clamp(10px,3vw,16px);margin-bottom:14px}}
+.card,.card *{{color:#2a1b6b}}
+.card h4{{font-weight:900;font-size:clamp(.88rem,3.5vw,1rem);margin-bottom:8px}}
+.card p{{font-size:clamp(.78rem,3vw,.88rem);line-height:1.5}}
 
-/* desc + pts */
-.desc-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
-@media(max-width:480px){ .desc-row { grid-template-columns:1fr; } }
-.pts-item { display:flex; align-items:flex-start; gap:8px; padding:5px 0;
-            border-bottom:1px solid rgba(42,27,107,.1); }
-.pts-item:last-child { border-bottom:none; }
-.pts-num  { font-family:'Barlow Condensed',sans-serif; font-weight:900;
-            font-size:clamp(1rem,4vw,1.3rem); color:#e53935; min-width:42px; line-height:1.1; }
-.pts-txt  { font-size:clamp(.75rem,2.8vw,.85rem); }
+/* DESCRIÇÃO + PONTUAÇÃO */
+.desc-row{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}}
+@media(max-width:480px){{.desc-row{{grid-template-columns:1fr}}}}
+.pts-item{{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(42,27,107,.1)}}
+.pts-item:last-child{{border-bottom:none}}
+.pts-num{{font-weight:900;font-size:clamp(1rem,4vw,1.3rem);color:#e53935;min-width:42px;line-height:1.1}}
+.pts-txt{{font-size:clamp(.75rem,2.8vw,.85rem)}}
 
-/* footer banner */
-.footer-banner { background:#fff; border-radius:14px; padding:clamp(10px,3vw,14px);
-                 display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:14px; }
-.money-box  { background:#009c3b; padding:clamp(8px,2.5vw,12px); border-radius:10px;
-              text-align:center; min-width:clamp(100px,28vw,130px); flex-shrink:0; }
-.money-box,.money-box * { color:#fff !important; }
-.money-val  { font-family:'Barlow Condensed',sans-serif; font-size:clamp(1.2rem,5.5vw,1.6rem);
-              font-weight:900; display:block; }
-.footer-right { flex:1; min-width:160px; }
-.footer-right p { text-align:center; color:#2a1b6b; font-weight:900;
-                   font-size:clamp(.72rem,3vw,.9rem); margin:0 0 8px 0; }
-.prizes { display:flex; justify-content:space-around; flex-wrap:wrap; gap:4px; }
-.prize .pts { color:#e53935; font-weight:900; font-size:clamp(.8rem,3.5vw,1rem); }
-.prize .lbl { color:#2a1b6b; font-weight:700; font-size:clamp(.58rem,2vw,.72rem); }
-.obs { font-size:clamp(.65rem,2.5vw,.75rem); color:rgba(255,255,255,.5);
-       line-height:1.5; margin-bottom:14px; }
+/* CLASSIFICAÇÃO */
+.classif-card{{background:#1e1560;border:1px solid rgba(255,255,255,.15);border-radius:14px;padding:clamp(10px,3vw,16px);margin-bottom:14px}}
+.classif-card h3{{font-weight:900;font-size:clamp(.9rem,4vw,1.1rem);color:#fff;text-align:center;margin-bottom:14px}}
+.sel-label{{font-weight:700;font-size:clamp(.8rem,3vw,.9rem);color:rgba(255,255,255,.8);margin-bottom:4px;letter-spacing:.5px}}
+select.sel{{width:100%;padding:10px 14px;border:1.5px solid rgba(255,255,255,.25);border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-size:clamp(.9rem,3.5vw,1rem);outline:none;margin-bottom:10px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='white'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-color:rgba(255,255,255,.1)}}
+select.sel option{{background:#1e1560;color:#fff}}
 
-/* classificacao card (fundo escuro p/ selects ficarem visíveis) */
-.classif-card { background:#1e1560; border:1px solid rgba(255,255,255,.15);
-                border-radius:14px; padding:clamp(10px,3vw,16px); margin-bottom:14px; }
-.classif-card h3 { font-family:'Barlow Condensed',sans-serif; font-weight:900;
-                   font-size:clamp(.9rem,4vw,1.1rem); color:#fff; text-align:center;
-                   margin:0 0 14px 0; }
+/* FOOTER BANNER */
+.footer-banner{{background:#fff;border-radius:14px;padding:clamp(10px,3vw,14px);display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px}}
+.money-box{{background:#009c3b;padding:clamp(8px,2.5vw,12px);border-radius:10px;text-align:center;min-width:clamp(100px,28vw,130px);flex-shrink:0}}
+.money-box,.money-box *{{color:#fff!important}}
+.money-val{{font-size:clamp(1.2rem,5.5vw,1.6rem);font-weight:900;display:block}}
+.footer-right{{flex:1;min-width:160px}}
+.footer-right p{{text-align:center;color:#2a1b6b;font-weight:900;font-size:clamp(.72rem,3vw,.9rem);margin-bottom:8px}}
+.prizes{{display:flex;justify-content:space-around;flex-wrap:wrap;gap:4px}}
+.prize .pts{{color:#e53935;font-weight:900;font-size:clamp(.8rem,3.5vw,1rem)}}
+.prize .lbl{{color:#2a1b6b;font-weight:700;font-size:clamp(.58rem,2vw,.72rem)}}
+.obs{{font-size:clamp(.65rem,2.5vw,.75rem);color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:14px}}
 
-/* inputs Streamlit — overrides */
-div[data-testid="stTextInput"] input,
-div[data-testid="stNumberInput"] input {
-    background:#fff !important; color:#2a1b6b !important;
-    border:2px solid #2a1b6b !important; border-radius:8px !important;
-    font-family:'Barlow Condensed',sans-serif !important;
-    font-weight:900 !important; font-size:clamp(1rem,5vw,1.4rem) !important;
-    text-align:center !important;
-}
-div[data-testid="stNumberInput"] button { display:none !important; }
-div[data-testid="stSelectbox"] > div > div {
-    background:rgba(255,255,255,.1) !important; color:#fff !important;
-    border:1.5px solid rgba(255,255,255,.25) !important; border-radius:10px !important;
-}
-div[data-testid="stSelectbox"] svg { fill:#fff !important; }
-div[data-testid="stSelectbox"] label,
-div[data-testid="stTextInput"] label,
-div[data-testid="stNumberInput"] label {
-    color:rgba(255,255,255,.8) !important; font-weight:700 !important;
-    font-family:'Barlow Condensed',sans-serif !important; letter-spacing:.5px !important;
-}
+/* NOME/DATA */
+.nome-data{{display:grid;grid-template-columns:2fr 1fr;gap:12px}}
+.nd-label{{font-weight:700;font-size:.75rem;margin-bottom:3px;opacity:.6}}
+.nd-val{{font-weight:900;font-size:clamp(.9rem,3.5vw,1.05rem)}}
 
-/* botões Streamlit */
-.stButton > button {
-    background:#ffdf00 !important; color:#1a1464 !important;
-    font-family:'Barlow Condensed',sans-serif !important;
-    font-weight:900 !important; font-size:clamp(.95rem,4vw,1.1rem) !important;
-    letter-spacing:1px !important; border:none !important;
-    border-radius:12px !important; width:100% !important;
-    min-height:48px !important; touch-action:manipulation !important;
-}
-.stButton > button:hover { background:#ffe833 !important; }
+/* BOTÕES */
+.btn{{width:100%;padding:clamp(12px,3vw,14px);border:none;border-radius:12px;font-size:clamp(.95rem,4vw,1.1rem);font-weight:900;cursor:pointer;letter-spacing:1px;touch-action:manipulation}}
+.btn-y{{background:#ffdf00;color:#1a1464}}
+.btn-g{{background:#009c3b;color:#fff}}
+.btn-gray{{background:rgba(255,255,255,.15);color:#fff}}
+.btn-row{{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}}
 
-/* botão verde */
-.btn-green > button {
-    background:#009c3b !important; color:#fff !important;
-}
-/* botão cinza */
-.btn-gray > button {
-    background:rgba(255,255,255,.15) !important; color:#fff !important;
-}
+/* MENSAGENS */
+.msg{{padding:12px 16px;border-radius:10px;font-weight:700;font-size:clamp(.85rem,3vw,.95rem);margin-bottom:14px}}
+.msg.ok{{background:rgba(0,156,59,.2);border:1px solid #009c3b;color:#7fffb0}}
+.msg.err{{background:rgba(200,16,46,.2);border:1px solid #c8102e;color:#ffaaaa}}
+.saved-badge{{background:rgba(0,156,59,.15);border:1px solid #009c3b;border-radius:10px;padding:12px 16px;margin-bottom:16px}}
+.sec-title{{font-weight:900;font-size:clamp(.88rem,3.5vw,1.1rem);color:#fff;letter-spacing:2px;border-left:4px solid #ffdf00;padding-left:10px;margin:16px 0 10px;text-transform:uppercase}}
 
-/* mensagem */
-.msg-ok  { background:rgba(0,156,59,.2); border:1px solid #009c3b;
-           border-radius:10px; padding:12px 16px; margin-bottom:14px;
-           color:#7fffb0; font-weight:700; font-size:clamp(.85rem,3vw,.95rem); }
-.msg-err { background:rgba(200,16,46,.2); border:1px solid #c8102e;
-           border-radius:10px; padding:12px 16px; margin-bottom:14px;
-           color:#ffaaaa; font-weight:700; font-size:clamp(.85rem,3vw,.95rem); }
+/* AVISO */
+.aviso{{background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.25);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:clamp(.78rem,3vw,.88rem);color:rgba(255,255,255,.7)}}
 
-/* saved badge */
-.saved-badge { background:rgba(0,156,59,.15); border:1px solid #009c3b;
-               border-radius:10px; padding:12px 16px; margin-bottom:16px; }
+/* CONFIRMAÇÃO */
+.confirm-box{{background:rgba(200,16,46,.1);border:1px solid rgba(200,16,46,.35);border-radius:10px;padding:12px;margin-bottom:10px;font-weight:700;color:#ffaaaa}}
 
-/* ranking */
-.rank-status-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
-.status-card { border-radius:10px; padding:clamp(8px,2.5vw,12px); text-align:center;
-               border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.05); }
-.status-card.enc { border-color:rgba(0,156,59,.5); background:rgba(0,156,59,.12); }
-.status-jogo   { font-size:clamp(.65rem,2.5vw,.75rem); color:rgba(255,255,255,.5);
-                 font-weight:700; letter-spacing:1px; text-transform:uppercase; }
-.status-placar { font-family:'Barlow Condensed',sans-serif; font-size:clamp(1rem,4vw,1.3rem);
-                 font-weight:900; color:#ffdf00; line-height:1.2; }
-.status-tag    { font-size:clamp(.62rem,2.2vw,.72rem); font-weight:700; }
-.rank-card { display:flex; align-items:center; gap:12px;
-             background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
-             border-radius:12px; padding:clamp(10px,3vw,14px) clamp(12px,3.5vw,18px);
-             margin-bottom:8px; }
-.rank-card.r1 { border-color:#ffd700; background:rgba(255,215,0,.08); }
-.rank-card.r2 { border-color:#c0c0c0; background:rgba(192,192,192,.06); }
-.rank-card.r3 { border-color:#cd7f32; background:rgba(205,127,50,.06); }
-.rank-pos  { font-family:'Barlow Condensed',sans-serif; font-weight:900;
-             font-size:clamp(1.2rem,5vw,1.5rem); min-width:32px; text-align:center;
-             color:rgba(255,255,255,.3); }
-.r1 .rank-pos { color:#ffd700; } .r2 .rank-pos { color:#c0c0c0; } .r3 .rank-pos { color:#cd7f32; }
-.rank-nome { flex:1; font-family:'Barlow Condensed',sans-serif; font-weight:900;
-             font-size:clamp(.88rem,3.5vw,1.05rem); color:#fff;
-             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.rank-pts-val { font-family:'Barlow Condensed',sans-serif; font-weight:900;
-                font-size:clamp(1.2rem,5vw,1.5rem); color:#ffdf00; text-align:right; }
-.rank-pts-lbl { font-size:clamp(.6rem,2.2vw,.7rem); color:rgba(255,255,255,.4); text-align:right; }
-.detail-box { background:rgba(255,255,255,.04); border-radius:10px; padding:12px;
-              margin-bottom:8px; font-size:clamp(.78rem,3vw,.88rem); color:rgba(255,255,255,.85); }
-.dl { padding:4px 0; border-bottom:1px solid rgba(255,255,255,.06); }
-.dl:last-child { border-bottom:none; }
-.ok-t  { color:#7fffb0; font-weight:700; }
-.err-t { color:#ffaaaa; }
-.pend-t{ color:rgba(255,255,255,.4); }
-.cf-row { display:flex; align-items:center; gap:10px;
-          background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
-          border-radius:10px; padding:10px 14px; margin-bottom:6px; color:#fff; }
+/* RANKING */
+.status-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}}
+.sc{{border-radius:10px;padding:clamp(8px,2.5vw,12px);text-align:center;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05)}}
+.sc.enc{{border-color:rgba(0,156,59,.5);background:rgba(0,156,59,.12)}}
+.sc-j{{font-size:clamp(.65rem,2.5vw,.75rem);color:rgba(255,255,255,.5);font-weight:700;letter-spacing:1px;text-transform:uppercase}}
+.sc-p{{font-size:clamp(1rem,4vw,1.3rem);font-weight:900;color:#ffdf00;line-height:1.2}}
+.sc-t{{font-size:clamp(.62rem,2.2vw,.72rem);font-weight:700}}
+.rank-card{{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:clamp(10px,3vw,14px) clamp(12px,3.5vw,18px);margin-bottom:8px;cursor:pointer;transition:.15s}}
+.rank-card:hover{{border-color:#ffdf00}}
+.rank-card.r1{{border-color:#ffd700;background:rgba(255,215,0,.08)}}
+.rank-card.r2{{border-color:#c0c0c0;background:rgba(192,192,192,.06)}}
+.rank-card.r3{{border-color:#cd7f32;background:rgba(205,127,50,.06)}}
+.rpos{{font-weight:900;font-size:clamp(1.2rem,5vw,1.5rem);min-width:32px;text-align:center;color:rgba(255,255,255,.3)}}
+.r1 .rpos{{color:#ffd700}}.r2 .rpos{{color:#c0c0c0}}.r3 .rpos{{color:#cd7f32}}
+.rnome{{flex:1;font-weight:900;font-size:clamp(.88rem,3.5vw,1.05rem);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.rpts{{font-weight:900;font-size:clamp(1.2rem,5vw,1.5rem);color:#ffdf00;text-align:right}}
+.rpts-l{{font-size:clamp(.6rem,2.2vw,.7rem);color:rgba(255,255,255,.4);text-align:right}}
+.detail-panel{{background:rgba(255,255,255,.04);border-radius:10px;padding:12px;margin-bottom:8px;display:none;font-size:clamp(.78rem,3vw,.88rem)}}
+.detail-panel.open{{display:block}}
+.dl{{padding:4px 0;color:rgba(255,255,255,.85);border-bottom:1px solid rgba(255,255,255,.06)}}
+.dl:last-child{{border-bottom:none}}
+.ok-t{{color:#7fffb0;font-weight:700}}.err-t{{color:#ffaaaa}}.pend-t{{color:rgba(255,255,255,.4)}}
+.cf-row{{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;margin-bottom:6px;color:#fff}}
 
-/* admin */
-.admin-warn { background:rgba(200,16,46,.08); border:1px solid rgba(200,16,46,.25);
-              border-radius:12px; padding:12px 16px; margin-bottom:16px;
-              font-size:.88rem; color:rgba(255,255,255,.7); }
-.admin-section { background:rgba(200,16,46,.07); border:1px solid rgba(200,16,46,.25);
-                 border-radius:12px; padding:14px; margin-bottom:14px; }
-.admin-section b { color:#fff; font-size:.9rem; }
+/* ADMIN */
+.admin-warn{{background:rgba(200,16,46,.08);border:1px solid rgba(200,16,46,.25);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:.88rem;color:rgba(255,255,255,.7)}}
+.admin-section{{background:rgba(200,16,46,.07);border:1px solid rgba(200,16,46,.25);border-radius:12px;padding:14px;margin-bottom:14px}}
+.admin-grid{{display:grid;grid-template-columns:1fr clamp(50px,13vw,68px) 24px clamp(50px,13vw,68px);align-items:center;gap:10px;margin:10px 0}}
+.ainput{{width:100%;padding:8px;border:1.5px solid rgba(255,255,255,.2);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font-size:1rem;font-weight:900;text-align:center;outline:none;-moz-appearance:textfield}}
+.ainput::-webkit-outer-spin-button,.ainput::-webkit-inner-spin-button{{-webkit-appearance:none}}
 </style>
-""", unsafe_allow_html=True)
+</head>
+<body>
 
-# ── Helpers de layout ─────────────────────────────────────
-def banner():
-    st.markdown("""
-    <div class="b-titulo">
-      <h1>Jogos do Brasil</h1><span class="b-grupo">GRUPO C</span>
+<div class="tabs">
+  <button class="tab active" onclick="goTab('form',this)">📝 PARTICIPAR</button>
+  <button class="tab"        onclick="goTab('rank',this)">🏆 RANKING</button>
+  <button class="tab"        onclick="goTab('admin',this)">⚙️ ADMIN</button>
+</div>
+
+<!-- ══════════ PARTICIPAR ══════════ -->
+<div id="pg-form" class="page active">
+  <div id="msg-area"></div>
+
+  <div class="titulo">
+    <h1>Jogos do Brasil</h1>
+    <span class="grupo-badge">GRUPO C</span>
+  </div>
+
+  <div class="bb">
+    <div class="bb-flag">
+      <div class="bb-diamond"><div class="bb-circle">ORDEM E<br>PROGRESSO</div></div>
     </div>
-    <div class="b-banner">
-      <div class="b-flag">
-        <div class="b-diamond"><div class="b-circle">ORDEM E<br>PROGRESSO</div></div>
-      </div>
-      <div class="b-nome">BRASIL</div>
-    </div>""", unsafe_allow_html=True)
+    <div class="bb-nome">BRASIL</div>
+  </div>
 
-def jogo_card_static(idx, jkey, adv, data, gb, ga):
-    st.markdown(f"""
+  <input id="nome-inp" class="nome-input" type="text"
+         placeholder="Digite seu nome completo..."
+         oninput="onNome(this.value)">
+
+  <div id="hint" style="text-align:center;padding:20px;color:rgba(255,255,255,.3);font-weight:700;font-size:.9rem;">
+    DIGITE SEU NOME PARA CONTINUAR 👆
+  </div>
+
+  <!-- Formulário novo palpite -->
+  <div id="form-novo" style="display:none">
+    <div class="aviso">⚠️ <b>Atenção:</b> após confirmar, seu palpite <b>não poderá ser alterado</b>.</div>
+
+    <!-- JOGO 1 -->
     <div class="jogo-card">
-      <div class="jogo-titulo">JOGO {idx} ({data})</div>
+      <div class="jogo-titulo">JOGO 1 (13/06)</div>
       <div class="jogo-body">
-        <span class="jogo-time home">BRASIL</span>
-        <span class="jogo-score">{gb}</span>
-        <span class="jogo-x">X</span>
-        <span class="jogo-score">{ga}</span>
-        <span class="jogo-time away">{adv}</span>
+        <span class="jt home">BRASIL</span>
+        <input class="jinput" id="j1b" type="number" min="0" max="20" value="0">
+        <span class="jx">X</span>
+        <input class="jinput" id="j1a" type="number" min="0" max="20" value="0">
+        <span class="jt away">MARROCOS</span>
       </div>
-      <div class="jogo-rodape">⭐ CRAVE O RESULTADO EXATO: <span class="red">50 PONTOS</span></div>
-    </div>""", unsafe_allow_html=True)
+      <div class="jrodape">⭐ CRAVE O RESULTADO EXATO: <span class="red">50 PONTOS</span></div>
+    </div>
 
-def desc_pts():
-    st.markdown("""
-    <div class="desc-row">
-      <div class="b-card">
-        <h4>DESCRIÇÃO:</h4>
-        <p style="font-size:clamp(.78rem,3vw,.88rem);line-height:1.5;">
-        Preencha os placares e ordene os times do Grupo C da 1ª à 4ª colocação.
-        Ganha quem acertar os placares e a ordem final!</p>
+    <!-- JOGO 2 -->
+    <div class="jogo-card">
+      <div class="jogo-titulo">JOGO 2 (19/06)</div>
+      <div class="jogo-body">
+        <span class="jt home">BRASIL</span>
+        <input class="jinput" id="j2b" type="number" min="0" max="20" value="0">
+        <span class="jx">X</span>
+        <input class="jinput" id="j2a" type="number" min="0" max="20" value="0">
+        <span class="jt away">HAITI</span>
       </div>
-      <div class="b-card">
+      <div class="jrodape">⭐ CRAVE O RESULTADO EXATO: <span class="red">50 PONTOS</span></div>
+    </div>
+
+    <!-- JOGO 3 -->
+    <div class="jogo-card">
+      <div class="jogo-titulo">JOGO 3 (24/06)</div>
+      <div class="jogo-body">
+        <span class="jt home">BRASIL</span>
+        <input class="jinput" id="j3b" type="number" min="0" max="20" value="0">
+        <span class="jx">X</span>
+        <input class="jinput" id="j3a" type="number" min="0" max="20" value="0">
+        <span class="jt away">ESCÓCIA</span>
+      </div>
+      <div class="jrodape">⭐ CRAVE O RESULTADO EXATO: <span class="red">50 PONTOS</span></div>
+    </div>
+
+    <!-- Desc + Pts -->
+    <div class="desc-row">
+      <div class="card">
+        <h4>DESCRIÇÃO:</h4>
+        <p>Preencha os placares e ordene os times do Grupo C da 1ª à 4ª colocação. Ganha quem acertar os placares e a ordem final!</p>
+      </div>
+      <div class="card">
         <h4>🏆 PONTUAÇÃO:</h4>
         <div class="pts-item"><span class="pts-num">50</span><span class="pts-txt"><b>Placar exato</b> de cada jogo</span></div>
         <div class="pts-item"><span class="pts-num">30</span><span class="pts-txt"><b>Colocado individual</b> correto</span></div>
         <div class="pts-item"><span class="pts-num">100</span><span class="pts-txt"><b>Gabaritar</b> a classificação</span></div>
       </div>
-    </div>""", unsafe_allow_html=True)
+    </div>
 
-def footer_banner():
-    st.markdown("""
+    <!-- Classificação -->
+    <div class="classif-card">
+      <h3>🏆 CLASSIFICAÇÃO DO GRUPO C</h3>
+      <div class="sel-label">1º Colocado</div>
+      <select id="c1" class="sel"><option value="">-- Selecione --</option><option>BRASIL</option><option>MARROCOS</option><option>HAITI</option><option>ESCÓCIA</option></select>
+      <div class="sel-label">2º Colocado</div>
+      <select id="c2" class="sel"><option value="">-- Selecione --</option><option>BRASIL</option><option>MARROCOS</option><option>HAITI</option><option>ESCÓCIA</option></select>
+      <div class="sel-label">3º Colocado</div>
+      <select id="c3" class="sel"><option value="">-- Selecione --</option><option>BRASIL</option><option>MARROCOS</option><option>HAITI</option><option>ESCÓCIA</option></select>
+      <div class="sel-label">4º Colocado</div>
+      <select id="c4" class="sel"><option value="">-- Selecione --</option><option>BRASIL</option><option>MARROCOS</option><option>HAITI</option><option>ESCÓCIA</option></select>
+    </div>
+
+    <!-- Nome + Data -->
+    <div class="card">
+      <div class="nome-data">
+        <div><div class="nd-label">NOME</div><div class="nd-val" id="nome-display">—</div></div>
+        <div><div class="nd-label">DATA</div><div class="nd-val" id="data-display">—</div></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
     <div class="footer-banner">
       <div class="money-box">
         💵<br><b style="font-size:.7rem;">VALOR PARA PARTICIPAR<br>DO BOLÃO:</b><br>
@@ -396,304 +406,285 @@ def footer_banner():
       </div>
     </div>
     <p class="obs">⭐ <b>OBS.:</b> Em caso de empate: 1º mais placares exatos, 2º mais acertos de ordem, 3º sorteio.</p>
-    """, unsafe_allow_html=True)
 
-def show_msg():
-    if st.session_state.msg:
-        cls = "msg-ok" if st.session_state.msg_ok else "msg-err"
-        st.markdown(f'<div class="{cls}">{st.session_state.msg}</div>', unsafe_allow_html=True)
-        st.session_state.msg = ""
-
-# ── Tabs ──────────────────────────────────────────────────
-tab1, tab2, tab3 = st.tabs(["📝 PARTICIPAR", "🏆 RANKING", "⚙️ ADMIN"])
-
-# ════════════════════════════════════════════════════════
-# ABA 1 — PARTICIPAR
-# ════════════════════════════════════════════════════════
-with tab1:
-    st.markdown('<div class="bolao-wrap">', unsafe_allow_html=True)
-    banner()
-    show_msg()
-
-    nome = st.text_input("Seu nome completo", placeholder="Digite seu nome aqui...",
-                         key="f_nome")
-
-    if not nome.strip():
-        st.markdown('<div style="text-align:center;padding:20px;color:rgba(255,255,255,.3);font-weight:700;">DIGITE SEU NOME PARA CONTINUAR 👆</div>', unsafe_allow_html=True)
-        desc_pts()
-        footer_banner()
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.stop()
-
-    nome = nome.strip()
-
-    # Palpite já enviado → somente leitura
-    if palpite_enviado(nome):
-        dados = get_palpite_completo_por_nome(nome)
-        st.markdown(f"""
-        <div class="saved-badge">
-          <div style="color:#7fffb0;font-weight:700;font-size:1rem;">
-            ✅ Palpite de <b>{nome}</b> registrado em {dados['enviado_em']}
-          </div>
-          <div style="color:rgba(255,255,255,.5);font-size:.8rem;margin-top:4px;">
-            Os palpites são definitivos e não podem ser alterados.
-          </div>
-        </div>""", unsafe_allow_html=True)
-        for i,(jkey,adv,data) in enumerate(JOGOS,1):
-            p = dados["palpites"].get(jkey)
-            gb,ga = p if p else (0,0)
-            jogo_card_static(i, jkey, adv, data, gb, ga)
-        desc_pts()
-        footer_banner()
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.stop()
-
-    # Aviso
-    st.markdown("""
-    <div style="background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.25);
-    border-radius:10px;padding:10px 14px;margin-bottom:4px;font-size:.82rem;color:rgba(255,255,255,.7);">
-    ⚠️ <b>Atenção:</b> após confirmar, seu palpite <b>não poderá ser alterado</b>.
-    </div>""", unsafe_allow_html=True)
-
-    # ── Jogos ─────────────────────────────────────────────
-    for i,(jkey,adv,data) in enumerate(JOGOS,1):
-        kb = f"f_j{i}b"; ka = f"f_j{i}a"
-        st.markdown(f"""
-        <div class="jogo-card">
-          <div class="jogo-titulo">JOGO {i} ({data})</div>
-        """, unsafe_allow_html=True)
-        c1,c2,c3,c4,c5 = st.columns([3,2,1,2,3])
-        with c1:
-            st.markdown(f"<div style='font-family:Barlow Condensed,sans-serif;font-weight:900;font-size:clamp(.78rem,3.5vw,1.05rem);color:#2a1b6b;padding-top:6px;'>BRASIL</div>", unsafe_allow_html=True)
-        with c2:
-            st.number_input("gols_br", min_value=0, max_value=20, value=0,
-                            key=kb, label_visibility="collapsed")
-        with c3:
-            st.markdown("<div style='text-align:center;font-weight:900;font-size:1.2rem;color:#2a1b6b;padding-top:6px;'>X</div>", unsafe_allow_html=True)
-        with c4:
-            st.number_input("gols_adv", min_value=0, max_value=20, value=0,
-                            key=ka, label_visibility="collapsed")
-        with c5:
-            st.markdown(f"<div style='font-family:Barlow Condensed,sans-serif;font-weight:900;font-size:clamp(.78rem,3.5vw,1.05rem);color:#2a1b6b;text-align:right;padding-top:6px;'>{adv}</div>", unsafe_allow_html=True)
-        st.markdown("""
-          <div class="jogo-rodape">⭐ CRAVE O RESULTADO EXATO: <span class="red">50 PONTOS</span></div>
-        </div>""", unsafe_allow_html=True)
-
-    desc_pts()
-
-    # ── Classificação ─────────────────────────────────────
-    st.markdown('<div class="classif-card"><h3>🏆 CLASSIFICAÇÃO DO GRUPO C</h3>', unsafe_allow_html=True)
-    opcoes = [""]+TIMES
-    c1v = st.selectbox("1º Colocado", opcoes, key="f_c1")
-    c2v = st.selectbox("2º Colocado", opcoes, key="f_c2")
-    c3v = st.selectbox("3º Colocado", opcoes, key="f_c3")
-    c4v = st.selectbox("4º Colocado", opcoes, key="f_c4")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # ── Nome + Data ───────────────────────────────────────
-    from datetime import date as dt
-    st.markdown(f"""
-    <div class="b-card">
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;">
-        <div><div style="font-weight:700;font-size:.75rem;margin-bottom:3px;opacity:.6;">NOME</div>
-             <div style="font-weight:900;font-size:1rem;">{nome}</div></div>
-        <div><div style="font-weight:700;font-size:.75rem;margin-bottom:3px;opacity:.6;">DATA</div>
-             <div style="font-weight:900;font-size:1rem;">{dt.today().strftime('%d/%m/%Y')}</div></div>
+    <div id="btn-area">
+      <button class="btn btn-y" onclick="validar()">ENVIAR PALPITE 🇧🇷</button>
+    </div>
+    <div id="confirm-area" style="display:none">
+      <div class="confirm-box">⚠️ CONFIRME SEU PALPITE — esta ação é irreversível!</div>
+      <div class="btn-row">
+        <button class="btn btn-g" onclick="enviar()">✅ SIM, ENVIAR</button>
+        <button class="btn btn-gray" onclick="cancelar()">✏️ EDITAR</button>
       </div>
-    </div>""", unsafe_allow_html=True)
+    </div>
+  </div>
 
-    footer_banner()
+  <!-- Palpite já enviado -->
+  <div id="form-salvo" style="display:none">
+    <div class="saved-badge">
+      <div id="salvo-msg" style="color:#7fffb0;font-weight:700;font-size:1rem;"></div>
+      <div style="color:rgba(255,255,255,.5);font-size:.8rem;margin-top:4px;">Os palpites são definitivos e não podem ser alterados.</div>
+    </div>
+    <div id="salvo-jogos"></div>
+  </div>
+</div>
 
-    # ── Botão envio ───────────────────────────────────────
-    if not st.session_state.confirmed:
-        if st.button("ENVIAR PALPITE 🇧🇷", key="btn_enviar"):
-            erros = []
-            if not all([c1v,c2v,c3v,c4v]):
-                erros.append("Selecione os 4 colocados!")
-            elif len({c1v,c2v,c3v,c4v}) != 4:
-                erros.append("Selecione times diferentes na classificação!")
-            if erros:
-                st.error(" | ".join(erros))
-            else:
-                st.session_state.confirmed = True
-                st.rerun()
-    else:
-        st.markdown("""
-        <div style="background:rgba(200,16,46,.12);border:1px solid rgba(200,16,46,.4);
-        border-radius:10px;padding:12px;margin-bottom:10px;font-weight:700;color:#ffaaaa;">
-        ⚠️ CONFIRME SEU PALPITE — esta ação é irreversível!
-        </div>""", unsafe_allow_html=True)
-        col_ok, col_cancel = st.columns(2)
-        with col_ok:
-            st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-            if st.button("✅ SIM, ENVIAR", key="btn_confirmar"):
-                st.session_state["_submit_palpite"] = True
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-        with col_cancel:
-            st.markdown('<div class="btn-gray">', unsafe_allow_html=True)
-            if st.button("✏️ EDITAR", key="btn_cancelar"):
-                st.session_state.confirmed = False
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+<!-- ══════════ RANKING ══════════ -->
+<div id="pg-rank" class="page">
+  <div class="sec-title" style="margin-top:4px">PLACARES</div>
+  <div class="status-grid" id="status-grid"></div>
+  <div class="sec-title">CLASSIFICAÇÃO GERAL</div>
+  <div id="rank-list"></div>
+  <div id="classif-final"></div>
+</div>
 
-    st.markdown('</div>', unsafe_allow_html=True)
+<!-- ══════════ ADMIN ══════════ -->
+<div id="pg-admin" class="page">
+  <div class="admin-warn">⚙️ Área exclusiva do organizador</div>
+  <div class="sel-label">Senha do administrador</div>
+  <div style="display:flex;gap:10px;margin-bottom:8px;">
+    <input id="admin-pwd" class="nome-input" type="password" placeholder="••••••••" style="margin-bottom:0;flex:1" onkeydown="if(event.key==='Enter')authAdmin()">
+    <button class="btn btn-y" style="width:auto;padding:10px 20px;flex-shrink:0" onclick="authAdmin()">ENTRAR</button>
+  </div>
+  <div id="admin-msg"></div>
+  <div id="admin-body" style="display:none">
+    <div style="background:rgba(0,156,59,.12);border:1px solid #009c3b;border-radius:10px;padding:10px 14px;margin-bottom:16px;color:#7fffb0;font-size:.88rem;font-weight:700;">✅ Acesso liberado</div>
+    <div class="sec-title">PLACARES REAIS</div>
+    <div id="admin-placares"></div>
+    <button class="btn btn-g" style="margin-bottom:20px" onclick="savePlacar()">💾 SALVAR PLACARES</button>
+    <div class="sec-title">CLASSIFICAÇÃO FINAL</div>
+    <div id="admin-classif"></div>
+    <button class="btn btn-g" onclick="saveClassif()">💾 SALVAR CLASSIFICAÇÃO</button>
+  </div>
+</div>
 
-# ════════════════════════════════════════════════════════
-# ABA 2 — RANKING
-# ════════════════════════════════════════════════════════
-with tab2:
-    st.markdown('<div class="bolao-wrap">', unsafe_allow_html=True)
+<script>
+const D = {JS_DATA};
+const TIMES = ['BRASIL','MARROCOS','HAITI','ESCÓCIA'];
+const ADVS  = ['MARROCOS','HAITI','ESCÓCIA'];
+const DATAS = ['13/06','19/06','24/06'];
+const PICONS= ['🥇','🥈','🥉','4°'];
 
-    # Status jogos
-    st.markdown('<div class="sec-title" style="margin-top:4px">PLACARES</div>', unsafe_allow_html=True)
-    cols = st.columns(3)
-    for col,(jkey,adv,data) in zip(cols,JOGOS):
-        r = placares_reais.get(jkey,{})
-        enc = r.get("encerrado")
-        with col:
-            if enc:
-                st.markdown(f"""
-                <div class="status-card enc">
-                  <div class="status-jogo">Jogo {jkey[-1]} · {data}</div>
-                  <div class="status-placar">Brasil {r['brasil']} × {r['adversario']}</div>
-                  <div class="status-tag" style="color:#7fffb0">✅ Encerrado</div>
-                </div>""", unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="status-card">
-                  <div class="status-jogo">Jogo {jkey[-1]} · {data}</div>
-                  <div class="status-placar" style="color:rgba(255,255,255,.3)">—</div>
-                  <div class="status-tag" style="color:rgba(255,255,255,.3)">⏳ Pendente</div>
-                </div>""", unsafe_allow_html=True)
+// ── Tabs ─────────────────────────────────────────────────
+function goTab(id, el) {{
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('pg-'+id).classList.add('active');
+  el.classList.add('active');
+}}
 
-    st.markdown('<div class="sec-title">CLASSIFICAÇÃO GERAL</div>', unsafe_allow_html=True)
+// ── Mensagem global ──────────────────────────────────────
+function showMsg(txt, ok) {{
+  const el = document.getElementById('msg-area');
+  el.innerHTML = `<div class="msg ${{ok?'ok':'err'}}">${{txt}}</div>`;
+  setTimeout(() => el.innerHTML = '', 7000);
+}}
 
-    if not scores:
-        st.markdown('<div style="text-align:center;padding:40px;color:rgba(255,255,255,.3);font-weight:700;">NENHUM PALPITE AINDA 🎯</div>', unsafe_allow_html=True)
-    else:
-        medals = ["🥇","🥈","🥉"]
-        rcs    = ["r1","r2","r3"]
-        adv_nomes = ["Marrocos","Haiti","Escócia"]
-        pos_icons = ["🥇","🥈","🥉","4°"]
+// ── Nome ─────────────────────────────────────────────────
+document.getElementById('data-display').textContent =
+  new Date().toLocaleDateString('pt-BR');
 
-        st.markdown(f'<div style="text-align:right;color:rgba(255,255,255,.35);font-size:.78rem;margin-bottom:8px;">{len(scores)} participante(s)</div>', unsafe_allow_html=True)
+function onNome(val) {{
+  const nome = val.trim();
+  document.getElementById('nome-display').textContent = nome || '—';
+  document.getElementById('hint').style.display       = nome ? 'none' : 'block';
+  document.getElementById('form-novo').style.display  = 'none';
+  document.getElementById('form-salvo').style.display = 'none';
+  if (!nome) return;
 
-        for idx, e in enumerate(scores):
-            pos = idx+1
-            med = medals[idx] if idx < 3 else f"{pos}°"
-            cls = rcs[idx]    if idx < 3 else ""
-            det = e["detail"]
+  const entry = D.ranking.find(r => r.nome.toLowerCase() === nome.toLowerCase());
+  if (entry) {{
+    document.getElementById('form-salvo').style.display = 'block';
+    document.getElementById('salvo-msg').innerHTML = `✅ Palpite de <b>${{entry.nome}}</b> já registrado!`;
+    let h = '';
+    entry.jogos.forEach((j,i) => {{
+      const gb = j.palpite[0]??'?', ga = j.palpite[1]??'?';
+      h += `<div class="jogo-card">
+        <div class="jogo-titulo">JOGO ${{i+1}} (${{DATAS[i]}})</div>
+        <div class="jogo-body">
+          <span class="jt home">BRASIL</span>
+          <span class="jscore">${{gb}}</span>
+          <span class="jx">X</span>
+          <span class="jscore">${{ga}}</span>
+          <span class="jt away">${{ADVS[i]}}</span>
+        </div>
+        <div class="jrodape">⭐ CRAVE O RESULTADO EXATO: <span class="red">50 PONTOS</span></div>
+      </div>`;
+    }});
+    document.getElementById('salvo-jogos').innerHTML = h;
+  }} else {{
+    document.getElementById('form-novo').style.display = 'block';
+  }}
+}}
 
-            st.markdown(f"""
-            <div class="rank-card {cls}">
-              <div class="rank-pos">{med}</div>
-              <div class="rank-nome">{e['nome'].upper()}</div>
-              <div>
-                <div class="rank-pts-val">{e['total']}</div>
-                <div class="rank-pts-lbl">PONTOS</div>
-              </div>
-            </div>""", unsafe_allow_html=True)
+// ── Validar e enviar ──────────────────────────────────────
+function validar() {{
+  const c1=document.getElementById('c1').value, c2=document.getElementById('c2').value;
+  const c3=document.getElementById('c3').value, c4=document.getElementById('c4').value;
+  if (!c1||!c2||!c3||!c4) {{ showMsg('❌ Selecione os 4 colocados!', false); return; }}
+  if (new Set([c1,c2,c3,c4]).size!==4) {{ showMsg('❌ Selecione times diferentes!', false); return; }}
+  document.getElementById('btn-area').style.display     = 'none';
+  document.getElementById('confirm-area').style.display = 'block';
+}}
+function cancelar() {{
+  document.getElementById('btn-area').style.display     = 'block';
+  document.getElementById('confirm-area').style.display = 'none';
+}}
+function g(id) {{ return document.getElementById(id).value; }}
+function enviar() {{
+  // Monta a URL do PARENT (Streamlit real), não do iframe
+  const base = window.parent.location.href.split('?')[0];
+  const p = new URLSearchParams({{
+    action:'submit', nome:g('nome-inp'),
+    j1b:g('j1b'), j1a:g('j1a'),
+    j2b:g('j2b'), j2a:g('j2a'),
+    j3b:g('j3b'), j3a:g('j3a'),
+    c1:g('c1'),   c2:g('c2'),
+    c3:g('c3'),   c4:g('c4'),
+  }});
+  window.parent.location.href = base + '?' + p.toString();
+}}
 
-            with st.expander(f"Detalhes — {e['nome']}"):
-                for ji,(jkey,adv,data) in enumerate(JOGOS):
-                    d = det.get(jkey,{})
-                    s = d.get("status","pendente")
-                    if s == "exato":
-                        p = d["palpite"]
-                        st.markdown(f'<div class="dl">Brasil {p[0]}×{p[1]} {adv_nomes[ji]} <span class="ok-t">✅ +50pts</span></div>', unsafe_allow_html=True)
-                    elif s == "errado":
-                        p,r2 = d["palpite"],d["real"]
-                        st.markdown(f'<div class="dl">Brasil {p[0]}×{p[1]} {adv_nomes[ji]} <span class="err-t">❌ (real: {r2[0]}×{r2[1]})</span></div>', unsafe_allow_html=True)
-                    else:
-                        pal = d.get("palpite")
-                        txt = f"{pal[0]}×{pal[1]}" if pal else "—"
-                        st.markdown(f'<div class="dl">Brasil {txt} {adv_nomes[ji]} <span class="pend-t">⏳</span></div>', unsafe_allow_html=True)
+// ── Ranking ───────────────────────────────────────────────
+function buildRanking() {{
+  document.getElementById('status-grid').innerHTML = D.jogos.map(j => {{
+    return `<div class="sc ${{j.enc?'enc':''}}">
+      <div class="sc-j">Jogo ${{j.key.slice(-1)}} · ${{j.data}}</div>
+      ${{j.enc
+        ? `<div class="sc-p">Brasil ${{j.brasil}} × ${{j.adversario}}</div><div class="sc-t" style="color:#7fffb0">✅ Encerrado</div>`
+        : `<div class="sc-p" style="font-size:.9rem;color:rgba(255,255,255,.3)">—</div><div class="sc-t" style="color:rgba(255,255,255,.3)">⏳ Pendente</div>`
+      }}
+    </div>`;
+  }}).join('');
 
-                cl = det.get("classificacao",{})
-                cp = cl.get("palpite",[])
-                if cp:
-                    st.markdown('<div class="dl" style="margin-top:6px;font-weight:700;border-bottom:none;">Classificação palpitada:</div>', unsafe_allow_html=True)
-                    cs = cl.get("status",{})
-                    cr2 = cl.get("real",[])
-                    for ci,t in enumerate(cp):
-                        acerto = cs.get(ci+1)
-                        if acerto == "acerto":
-                            tag = '<span class="ok-t">✅ +30pts</span>'
-                        elif acerto == "errado":
-                            era = cr2[ci] if ci < len(cr2) else "?"
-                            tag = f'<span class="err-t">❌ (era {era})</span>'
-                        else:
-                            tag = '<span class="pend-t">⏳</span>'
-                        st.markdown(f'<div class="dl">{pos_icons[ci]} {t} {tag}</div>', unsafe_allow_html=True)
-                    if cs.get("gabarito") is True:
-                        st.markdown('<div class="dl"><span class="ok-t">🏆 GABARITO! +100pts bônus</span></div>', unsafe_allow_html=True)
+  const rl = document.getElementById('rank-list');
+  if (!D.ranking.length) {{
+    rl.innerHTML='<div style="text-align:center;padding:40px;color:rgba(255,255,255,.3);font-weight:700;">NENHUM PALPITE AINDA 🎯</div>';
+    return;
+  }}
+  const rcs = ['r1','r2','r3'];
+  const meds= ['🥇','🥈','🥉'];
+  rl.innerHTML = `<div style="text-align:right;color:rgba(255,255,255,.35);font-size:.78rem;margin-bottom:8px;">${{D.ranking.length}} participante(s)</div>`;
 
-        # Classificação final publicada
-        if any(classificacao_real.values()):
-            st.markdown('<div class="sec-title">CLASSIFICAÇÃO FINAL · GRUPO C</div>', unsafe_allow_html=True)
-            for p in range(1,5):
-                t = classificacao_real.get(p,"—")
-                st.markdown(f'<div class="cf-row"><span style="font-size:1.1rem;">{pos_icons[p-1]}</span><span style="font-family:Barlow Condensed,sans-serif;font-weight:900;font-size:1rem;">{t}</span></div>', unsafe_allow_html=True)
+  D.ranking.forEach(e => {{
+    const idx = e.pos-1;
+    const card = document.createElement('div');
+    card.className = 'rank-card '+(rcs[idx]||'');
+    card.innerHTML = `<div class="rpos">${{meds[idx]||e.pos+'°'}}</div>
+      <div class="rnome">${{e.nome.toUpperCase()}}</div>
+      <div><div class="rpts">${{e.total}}</div><div class="rpts-l">PONTOS</div></div>`;
+    card.onclick = () => document.getElementById('dp-'+e.pos).classList.toggle('open');
+    rl.appendChild(card);
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    const panel = document.createElement('div');
+    panel.id = 'dp-'+e.pos;
+    panel.className = 'detail-panel';
+    let dh = '';
+    e.jogos.forEach((j,ji) => {{
+      if (j.status==='exato')
+        dh+=`<div class="dl">Brasil ${{j.palpite[0]}}×${{j.palpite[1]}} ${{ADVS[ji]}} <span class="ok-t">✅ +50pts</span></div>`;
+      else if(j.status==='errado')
+        dh+=`<div class="dl">Brasil ${{j.palpite[0]}}×${{j.palpite[1]}} ${{ADVS[ji]}} <span class="err-t">❌ (real: ${{j.real[0]}}×${{j.real[1]}})</span></div>`;
+      else {{
+        const pal = j.palpite.length ? j.palpite[0]+'×'+j.palpite[1] : '—';
+        dh+=`<div class="dl">Brasil ${{pal}} ${{ADVS[ji]}} <span class="pend-t">⏳</span></div>`;
+      }}
+    }});
+    if (e.cp.length) {{
+      dh+='<div class="dl" style="margin-top:6px;font-weight:700;border:none;">Classificação:</div>';
+      e.cp.forEach((t,ci) => {{
+        const st=e.cs[String(ci+1)];
+        const tag=st==='acerto'?'<span class="ok-t">✅ +30pts</span>'
+          :st==='errado'?`<span class="err-t">❌ (era ${{e.cr[ci]||'?'}})</span>`
+          :'<span class="pend-t">⏳</span>';
+        dh+=`<div class="dl">${{PICONS[ci]}} ${{t}} ${{tag}}</div>`;
+      }});
+      if (e.cs['gabarito']===true) dh+='<div class="dl"><span class="ok-t">🏆 GABARITO! +100pts bônus</span></div>';
+    }}
+    panel.innerHTML = dh;
+    rl.appendChild(panel);
+  }});
 
-# ════════════════════════════════════════════════════════
-# ABA 3 — ADMIN
-# ════════════════════════════════════════════════════════
-with tab3:
-    st.markdown('<div class="bolao-wrap">', unsafe_allow_html=True)
-    show_msg()
-    st.markdown('<div class="admin-warn">⚙️ Área exclusiva do organizador</div>', unsafe_allow_html=True)
+  const cfa = document.getElementById('classif-final');
+  if (D.cr.some(t=>t)) {{
+    cfa.innerHTML = '<div class="sec-title">CLASSIFICAÇÃO FINAL · GRUPO C</div>'
+      + D.cr.map((t,i)=>`<div class="cf-row"><span style="font-size:1.1rem">${{PICONS[i]}}</span><span style="font-weight:900;font-size:1rem;">${{t}}</span></div>`).join('');
+  }}
+}}
 
-    pwd_input = st.text_input("Senha do administrador", type="password", key="admin_pwd")
+// ── Admin ─────────────────────────────────────────────────
+function authAdmin() {{
+  const pwd = document.getElementById('admin-pwd').value;
+  const msg = document.getElementById('admin-msg');
+  if (pwd === 'brasil2026') {{
+    document.getElementById('admin-body').style.display = 'block';
+    msg.innerHTML = '';
+    buildAdmin();
+  }} else {{
+    msg.innerHTML = '<div class="msg err">❌ Senha incorreta!</div>';
+    document.getElementById('admin-body').style.display = 'none';
+  }}
+}}
 
-    if pwd_input != "brasil2026":
-        if pwd_input:
-            st.error("❌ Senha incorreta!")
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.stop()
+function buildAdmin() {{
+  const KEYS = ['jogo1','jogo2','jogo3'];
+  let ph = '';
+  D.jogos.forEach((j,i) => {{
+    const vb=j.brasil??0, va=j.adversario??0;
+    ph += `<div class="admin-section">
+      <b>Jogo ${{i+1}} (${{j.data}}) — Brasil × ${{ADVS[i]}}</b>
+      ${{j.enc?`<div style="color:#7fffb0;font-size:.82rem;margin:6px 0;">✅ Salvo: Brasil ${{vb}} × ${{va}}</div>`:''}}
+      <div class="admin-grid">
+        <span style="font-weight:700;font-size:.88rem;color:#fff;">Brasil</span>
+        <input class="ainput" id="r${{i+1}}b" type="number" min="0" max="20" value="${{vb}}">
+        <span style="text-align:center;font-weight:900;color:#fff;">×</span>
+        <input class="ainput" id="r${{i+1}}a" type="number" min="0" max="20" value="${{va}}">
+      </div>
+      <label style="font-size:.82rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;">
+        <input type="checkbox" id="enc_${{KEYS[i]}}" ${{j.enc?'checked':''}}>
+        Marcar como encerrado
+      </label>
+    </div>`;
+  }});
+  document.getElementById('admin-placares').innerHTML = ph;
 
-    st.success("✅ Acesso liberado!")
+  let ch = '';
+  for(let i=1;i<=4;i++) {{
+    const cur = (D.cr[i-1]||'').toUpperCase();
+    ch += `<div class="sel-label">${{i}}º Colocado</div>
+    <select id="rc${{i}}" class="sel">
+      <option value="">-- Selecione --</option>
+      ${{TIMES.map(t=>`<option value="${{t}}" ${{t===cur?'selected':''}}>${{t}}</option>`).join('')}}
+    </select>`;
+  }}
+  document.getElementById('admin-classif').innerHTML = ch;
+}}
 
-    # Placares reais
-    st.markdown('<div class="sec-title">PLACARES REAIS</div>', unsafe_allow_html=True)
-    for i,(jkey,adv,data) in enumerate(JOGOS,1):
-        r = placares_reais.get(jkey,{})
-        enc = bool(r.get("encerrado"))
-        st.markdown(f'<div class="admin-section"><b>Jogo {i} ({data}) — Brasil × {adv}</b>', unsafe_allow_html=True)
-        if enc:
-            st.markdown(f'<div style="color:#7fffb0;font-size:.82rem;margin:6px 0;">✅ Salvo: Brasil {r["brasil"]} × {r["adversario"]}</div>', unsafe_allow_html=True)
-        ca,cb,cc,cd = st.columns([3,2,1,2])
-        with ca: st.markdown("<div style='color:#fff;font-weight:700;padding-top:8px;font-size:.88rem;'>Brasil</div>", unsafe_allow_html=True)
-        with cb: st.number_input("gols_br", min_value=0, max_value=20,
-                                  value=int(r.get("brasil") or 0),
-                                  key=f"ar{i}b", label_visibility="collapsed")
-        with cc: st.markdown("<div style='text-align:center;color:#fff;font-weight:900;padding-top:8px;'>×</div>", unsafe_allow_html=True)
-        with cd: st.number_input("gols_adv", min_value=0, max_value=20,
-                                   value=int(r.get("adversario") or 0),
-                                   key=f"ar{i}a", label_visibility="collapsed")
-        st.checkbox("Marcar como encerrado", value=enc, key=f"enc_{jkey}")
-        st.markdown('</div>', unsafe_allow_html=True)
+function savePlacar() {{
+  const pwd = document.getElementById('admin-pwd').value;
+  const base = window.parent.location.href.split('?')[0];
+  const p = new URLSearchParams({{action:'admin_placar',pwd}});
+  ['jogo1','jogo2','jogo3'].forEach((k,i) => {{
+    p.set('r'+(i+1)+'b', document.getElementById('r'+(i+1)+'b').value||0);
+    p.set('r'+(i+1)+'a', document.getElementById('r'+(i+1)+'a').value||0);
+    if(document.getElementById('enc_'+k).checked) p.set('enc_'+k,'1');
+  }});
+  window.parent.location.href = base + '?' + p.toString();
+}}
 
-    st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-    if st.button("💾 SALVAR PLACARES", key="btn_admin_placar"):
-        st.session_state["_admin_save_placar"] = True
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+function saveClassif() {{
+  const pwd = document.getElementById('admin-pwd').value;
+  const base = window.parent.location.href.split('?')[0];
+  const p = new URLSearchParams({{action:'admin_classif',pwd}});
+  for(let i=1;i<=4;i++) p.set('rc'+i, document.getElementById('rc'+i).value);
+  window.parent.location.href = base + '?' + p.toString();
+}}
 
-    # Classificação final
-    st.markdown('<div class="sec-title" style="margin-top:20px">CLASSIFICAÇÃO FINAL DO GRUPO C</div>', unsafe_allow_html=True)
-    opcoes_admin = [""]+TIMES
-    for i in range(1,5):
-        cur = (classificacao_real.get(i,"")).upper()
-        idx_cur = opcoes_admin.index(cur) if cur in opcoes_admin else 0
-        st.selectbox(f"{i}º Colocado", opcoes_admin, index=idx_cur, key=f"arc{i}")
+// ── Init ──────────────────────────────────────────────────
+buildRanking();
+if (D.msg) showMsg(D.msg, D.msg_ok);
+</script>
+</body>
+</html>"""
 
-    st.markdown('<div class="btn-green">', unsafe_allow_html=True)
-    if st.button("💾 SALVAR CLASSIFICAÇÃO", key="btn_admin_classif"):
-        st.session_state["_admin_save_classif"] = True
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+st.components.v1.html(HTML, height=2800, scrolling=True)
